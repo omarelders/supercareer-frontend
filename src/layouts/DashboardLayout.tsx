@@ -1,0 +1,23 @@
+import { Outlet } from 'react-router-dom'
+import Sidebar from './Sidebar'
+import TopNav from './TopNav'
+import AnimatedContent from '@/components/reactbits/AnimatedContent'
+
+export default function DashboardLayout() {
+  return (
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Fixed Left Sidebar */}
+      <Sidebar />
+
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <TopNav />
+        <main id="snap-main-container" className="flex-1 overflow-y-auto px-8 pt-10 pb-8">
+          <AnimatedContent distance={24} duration={0.6} ease="power3.out" className="w-full">
+            <Outlet />
+          </AnimatedContent>
+        </main>
+      </div>
+    </div>
+  )
+}

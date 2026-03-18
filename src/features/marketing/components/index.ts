@@ -1,0 +1,8 @@
+export { default as CTASection } from './CTASection'
+export { default as FeaturesSection } from './FeaturesSection'
+export { default as HeroSection } from './HeroSection'
+export { default as MarketingFooter } from './MarketingFooter'
+export { default as MarketingNavbar } from './MarketingNavbar'
+export { default as PartnersSection } from './PartnersSection'
+export { default as ResonanceSection } from './ResonanceSection'
+export { default as StatsSection } from './StatsSection'
