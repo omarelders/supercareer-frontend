@@ -33,11 +33,9 @@ export default function ForgotPasswordPage() {
     <div className="w-full max-w-135 mx-auto">
       <AnimatedContent distance={24} duration={0.6} ease="power3.out" className="w-full">
         <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 overflow-hidden">
-          {/* Top banner / illustration area */}
           <div className="bg-slate-50 flex items-center justify-center pt-16 pb-12">
-            {/* Custom Lock / Refresh Icon composite */}
             <div className="w-20 h-20 rounded-7 bg-indigo-100 flex items-center justify-center relative">
-              {/* We'll use lucide icons composed to approximate the screenshot */}
+
               <RotateCcw size={40} className="text-blue-500" strokeWidth={2.5} />
               <div className="absolute inset-0 flex items-center justify-center pb-1">
                 <div className="w-3.5 h-4 bg-blue-500 rounded-sm relative mt-2">
@@ -47,7 +45,6 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          {/* Card Data */}
           <div className="px-12 py-10">
             <h1 className="text-3xl font-bold text-slate-900 text-center mb-3">Forgot Password?</h1>
             <p className="text-base text-slate-500 text-center max-w-80 mx-auto mb-10 leading-relaxed">

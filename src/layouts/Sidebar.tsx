@@ -86,16 +86,13 @@ function NavSection({ item }: { item: NavigationItem }) {
 export default function Sidebar() {
   return (
     <aside className="w-50 shrink-0 flex flex-col h-full border-r border-slate-200 bg-white">
-      {/* Logo */}
       <Logo className="px-4 py-5" />
 
-      {/* Main Nav */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
         {MAIN_NAV_ITEMS.map((item) => (
           <NavSection key={item.label} item={item} />
         ))}
 
-        {/* Settings divider */}
         <div className="pt-4 pb-1">
           <p className="px-3 text-xs font-semibold tracking-widest text-slate-400 uppercase">
             Settings
@@ -107,7 +104,6 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* User profile footer */}
       <div className="px-3 py-3 border-t border-slate-200">
         <div className="flex items-center gap-2.5">
           <img

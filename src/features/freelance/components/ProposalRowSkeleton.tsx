@@ -1,4 +1,3 @@
-/** Skeleton shimmer for a single proposal table row */
 export default function ProposalRowSkeleton() {
   return (
     <div className="grid grid-cols-proposal-table gap-4 items-center px-8 py-5 animate-pulse">

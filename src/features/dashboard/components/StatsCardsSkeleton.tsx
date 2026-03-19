@@ -1,4 +1,3 @@
-/** Shimmer skeleton for the 4-column stats card row on the dashboard */
 export default function StatsCardsSkeleton() {
   return (
     <div className="grid grid-cols-4 gap-6">

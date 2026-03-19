@@ -4,7 +4,6 @@ import Logo from '../components/Logo'
 export default function AuthLayout() {
   const location = useLocation()
 
-  // Determine top-right CTA button based on path
   let ctaRoute = '/login'
   let ctaText = 'Login'
 
@@ -18,21 +17,17 @@ export default function AuthLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Top Navbar */}
       <header className="h-18 bg-white border-b border-slate-200 flex items-center px-10">
-        {/* Logo */}
         <Link to="/" className="mr-auto">
           <Logo />
         </Link>
 
-        {/* Nav links */}
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate-800 font-bold mr-10">
           <Link to="/" className="hover:text-blue-600 transition-colors">Find Work</Link>
           <Link to="/" className="hover:text-blue-600 transition-colors">Hire Freelancers</Link>
           <Link to="/" className="hover:text-blue-600 transition-colors">About</Link>
         </nav>
 
-        {/* CTA button */}
         <Link
           to={ctaRoute}
           className="bg-blue-600 text-white text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-blue-700 transition-colors"
@@ -41,12 +36,10 @@ export default function AuthLayout() {
         </Link>
       </header>
 
-      {/* Page content */}
       <main className="flex-1 flex flex-col items-center justify-center py-12 px-4">
         <Outlet />
       </main>
 
-      {/* Footer */}
       <footer className="h-15 bg-slate-50 flex items-center justify-between px-10 text-xs text-slate-500 border-t border-slate-200">
         <span>© 2026 Super Career. All rights reserved.</span>
         <div className="flex gap-6">

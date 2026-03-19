@@ -29,7 +29,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   
-  /* marketing page Shadows */
+  
   --shadow-marketing-card: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-marketing-glow: 0 48px 80px -16px rgba(0, 0, 0, 0.3);
   --shadow-marketing-index: 0 0 20px rgba(37, 99, 235, 0.6);

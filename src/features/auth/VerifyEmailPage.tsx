@@ -40,7 +40,6 @@ export default function VerifyEmailPage() {
 
   const digits = watch('digits')
 
-  // Countdown timer
   useEffect(() => {
     if (seconds <= 0) return
     const id = setTimeout(() => setSeconds((s) => s - 1), 1000)
@@ -53,7 +52,6 @@ export default function VerifyEmailPage() {
     next[index] = char
     setValue('digits', next, { shouldValidate: true, shouldDirty: true })
     
-    // Auto-advance
     if (char && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus()
     }
@@ -91,7 +89,6 @@ export default function VerifyEmailPage() {
     <div className="w-full max-w-120">
       <AnimatedContent distance={22} duration={0.6} ease="power3.out" className="w-full">
         <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 px-10 py-9">
-          {/* Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
               <MailCheck size={22} className="text-blue-600" />
@@ -105,7 +102,6 @@ export default function VerifyEmailPage() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            {/* OTP Boxes */}
             <div className="flex justify-center gap-2.5 mb-2" onPaste={handlePaste}>
               {digits.map((digit, i) => (
                 <input
@@ -135,7 +131,6 @@ export default function VerifyEmailPage() {
               )}
             </div>
 
-            {/* Timer + Resend */}
             <div className="flex items-center justify-center gap-4 mb-7">
               <div className="flex items-end gap-1">
                 <div className="text-center">

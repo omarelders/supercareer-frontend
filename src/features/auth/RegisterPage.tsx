@@ -46,7 +46,6 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-120 mx-auto">
-      {/* Header: Logo and Title */}
       <AnimatedContent distance={20} duration={0.6} ease="power3.out" className="w-full">
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-5" />
@@ -55,12 +54,10 @@ export default function RegisterPage() {
         </div>
       </AnimatedContent>
 
-      {/* Main Register Card */}
       <AnimatedContent distance={26} duration={0.6} delay={0.1} ease="power3.out" className="w-full">
         <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-10">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">
                 Full name
@@ -82,7 +79,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">
                 Email address
@@ -104,7 +100,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
               <div className="relative">
@@ -124,7 +119,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Confirm Password</label>
               <div className="relative">
@@ -144,7 +138,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Register Button */}
             <GlareHover
               className="w-full border-0"
               width="100%"
@@ -166,14 +159,12 @@ export default function RegisterPage() {
               </button>
             </GlareHover>
 
-            {/* Divider */}
             <div className="flex items-center gap-4 py-3">
               <div className="flex-1 h-px bg-slate-100" />
               <span className="text-sm font-medium text-slate-400">Or continue with</span>
               <div className="flex-1 h-px bg-slate-100" />
             </div>
 
-            {/* Social Sign-in */}
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -201,7 +192,6 @@ export default function RegisterPage() {
         </div>
       </AnimatedContent>
 
-      {/* Footer Text */}
       <AnimatedContent distance={16} duration={0.6} delay={0.2} ease="power3.out" className="w-full">
         <div className="mt-8 text-center space-y-6">
           <p className="text-sm text-slate-500">

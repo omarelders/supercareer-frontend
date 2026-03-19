@@ -15,7 +15,6 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
 
-// Compute strength label + colour + width from a password string
 function getStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw || pw.length === 0) return { label: '', color: 'bg-transparent', width: '0%' }
   if (pw.length < 6) return { label: 'WEAK', color: 'bg-red-500', width: '25%' }
@@ -54,7 +53,6 @@ export default function ResetPasswordPage() {
       <AnimatedContent distance={26} duration={0.6} ease="power3.out" className="w-full">
         <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 px-12 py-10">
           
-          {/* Custom refresh/key icon composite */}
           <div className="w-12 h-12 flex items-center justify-center rounded-full bg-indigo-100 mb-8 relative">
             <RotateCcw size={20} className="text-blue-500" strokeWidth={2.5} />
             <KeyRound size={12} className="absolute text-blue-500 fill-white" strokeWidth={3} />
@@ -66,7 +64,6 @@ export default function ResetPasswordPage() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* New password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2.5">New Password</label>
               <div className="relative">
@@ -86,7 +83,6 @@ export default function ResetPasswordPage() {
               )}
             </div>
 
-            {/* Confirm password */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2.5">Confirm Password</label>
               <div className="relative">
@@ -106,7 +102,6 @@ export default function ResetPasswordPage() {
               )}
             </div>
 
-            {/* Strength meter */}
             <div className="bg-slate-50 rounded-2xl p-5 pt-4 space-y-3">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-slate-700">Password Strength</span>
@@ -124,7 +119,6 @@ export default function ResetPasswordPage() {
                   {strength.label || 'NONE'}
                 </span>
               </div>
-              {/* Track */}
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${strength.color}`}

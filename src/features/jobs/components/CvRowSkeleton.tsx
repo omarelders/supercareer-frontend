@@ -1,4 +1,3 @@
-/** Skeleton shimmer for a single CV table row */
 export default function CvRowSkeleton() {
   return (
     <div className="grid grid-cols-cv-table items-center px-6 py-5 animate-pulse">
