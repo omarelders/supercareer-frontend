@@ -1,10 +1,14 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { ROUTES } from '@/config/routes'
-import { useAppSelector } from '@/store/hooks'
-import { selectIsAuthenticated } from '@/store/slices/authSlice'
+import { useAuth } from '@/context/AuthContext'
 
 export default function ProtectedRoute() {
-  const isAuthenticated = useAppSelector(selectIsAuthenticated)
+  const { isAuthenticated, loading } = useAuth()
+
+  // Wait until the AuthContext has finished initialising
+  if (loading) {
+    return null // or a spinner component
+  }
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.login} replace />

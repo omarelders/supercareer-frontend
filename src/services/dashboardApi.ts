@@ -1,5 +1,5 @@
-import axios from 'axios'
-import { delay } from './request'
+import { getDashboardStats as fetchDashboardStats } from './accountsApi'
+import { fetchJobs, fetchProjects } from './opportunitiesApi'
 
 
 
@@ -24,103 +24,69 @@ export interface DashboardProjectMatch {
 }
 
 export interface DashboardStats {
-  matchesToday: number
-  matchesTodayChange: number
-  avgMatchScore: number
-  avgMatchScoreChange: number
-  activeProposals: number
-  profileViews: number
-  profileViewsChange: number
+  // Real API fields (snake_case from backend)
+  matches_today: number
+  active_proposals: number
+  avg_match_score: number
+  profile_views: number
+  user_name: string
 }
 
 
-
-const MOCK_JOB_MATCHES: DashboardJobMatch[] = [
-  {
-    id: 1,
-    title: 'Lead Product Designer',
-    platform: 'LinkedIn',
-    location: 'Remote',
-    tags: ['FIGMA', 'REACT', 'DESIGN SYSTEMS'],
-    matchPct: 98,
-    logo: 'Sy',
-    logoColor: '#2d6a4f',
-  },
-  {
-    id: 2,
-    title: 'Senior UI Developer',
-    platform: 'Upwork',
-    location: 'Freelance (Remote)',
-    tags: ['TAILWIND CSS', 'VUE.JS'],
-    matchPct: 94,
-    logo: 'Lo',
-    logoColor: '#1a3c5e',
-  },
-  {
-    id: 3,
-    title: 'UX Researcher',
-    platform: 'Toptal',
-    location: 'Project (Contract)',
-    tags: ['USER TESTS', 'HOTJAR'],
-    matchPct: 91,
-    logo: 'Sy',
-    logoColor: '#2d6a4f',
-  },
+// Heuristic: pick an avatar colour from a stable palette based on job id
+const LOGO_COLORS = [
+  '#2d6a4f', '#1a3c5e', '#6b21a8', '#b45309', '#0e7490',
+  '#be185d', '#166534', '#1e40af', '#7c3aed', '#b91c1c',
 ]
 
-const MOCK_PROJECT_MATCHES: DashboardProjectMatch[] = [
-  {
-    id: 1,
-    title: 'Build a Flutter App for Online Learning',
-    subtitle: 'Proposal Sent via Upwork',
-    client: 'Nova Stream Systems',
-    status: 'In Review',
-    date: 'Oct 24, 2023',
-  },
-  {
-    id: 2,
-    title: 'Principal Product Designer',
-    subtitle: 'Custom CV Sent via LinkedIn',
-    client: 'Stripe',
-    status: 'Interviewing',
-    date: 'Oct 21, 2023',
-  },
-  {
-    id: 3,
-    title: 'HealthApp Mobile UI',
-    subtitle: 'Proposal Sent via Toptal',
-    client: 'CureBase Inc.',
-    status: 'Sent',
-    date: 'Oct 19, 2023',
-  },
-]
-
-const MOCK_STATS: DashboardStats = {
-  matchesToday: 24,
-  matchesTodayChange: 12,
-  avgMatchScore: 92,
-  avgMatchScoreChange: 5,
-  activeProposals: 18,
-  profileViews: 142,
-  profileViewsChange: 28,
+function logoColor(id: number): string {
+  return LOGO_COLORS[id % LOGO_COLORS.length]
 }
 
-const api = axios.create({ baseURL: '/api' })
-
-
+function logoInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
 
 export async function getDashboardJobMatches(): Promise<DashboardJobMatch[]> {
-  await delay(800)
-  void api 
-  return MOCK_JOB_MATCHES
+  try {
+    const jobs = await fetchJobs()
+    return jobs.slice(0, 3).map((job) => ({
+      id: job.id,
+      title: job.title,
+      platform: job.source_platform,
+      location: job.location,
+      tags: [],        // API doesn't expose skill tags on the job list endpoint
+      matchPct: Math.round(job.match_score),
+      logo: logoInitials(job.company),
+      logoColor: logoColor(job.id),
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function getDashboardProjectMatches(): Promise<DashboardProjectMatch[]> {
-  await delay(800)
-  return MOCK_PROJECT_MATCHES
+  try {
+    const projects = await fetchProjects()
+    return projects.slice(0, 3).map((project) => ({
+      id: project.id,
+      title: project.title,
+      subtitle: `Listed on ${project.platform_name}`,
+      client: project.platform_name,
+      status: 'Sent',   // No status on project listings; proposals start as Sent
+      date: new Date(project.posted_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  await delay(800)
-  return MOCK_STATS
+  return fetchDashboardStats()
 }

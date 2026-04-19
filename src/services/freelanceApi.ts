@@ -1,5 +1,18 @@
-import axios from 'axios'
-import { delay } from './request'
+import {
+  fetchProjects,
+  createProposal as apiCreateProposal,
+  type ApiProject,
+  type CreateProposalPayload,
+  type ApiProposal,
+} from './opportunitiesApi'
+import {
+  fetchDocumentProposals,
+  fetchDocumentProposalById,
+  patchDocumentProposal,
+  type DocApiProposal,
+  type DocProposalStatus,
+  type PatchProposalPayload,
+} from './documentsApi'
 
 
 
@@ -14,6 +27,12 @@ export interface ProjectMatch {
   location: string
   description: string
   tags: string[]
+  /** Original source URL so users can open the listing */
+  sourceUrl?: string
+  /** Platform where the project was posted */
+  platform?: string
+  /** Raw deadline string */
+  deadline?: string
 }
 
 export interface Proposal {
@@ -24,68 +43,188 @@ export interface Proposal {
   client: string
 }
 
+// ---------------------------------------------------------------------------
+// Mapping helpers
+// ---------------------------------------------------------------------------
 
+/** Parse an ISO or date-only string and return a relative label. */
+function relativePostedTime(dateStr: string): string {
+  try {
+    const posted = new Date(dateStr)
+    const diffMs = Date.now() - posted.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    if (diffHours < 1) return 'Just now'
+    if (diffHours < 24) return `Posted ${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays === 1) return 'Posted 1d ago'
+    if (diffDays < 7) return `Posted ${diffDays}d ago`
+    return `Posted ${Math.floor(diffDays / 7)}w ago`
+  } catch {
+    return 'Posted recently'
+  }
+}
 
-const MOCK_PROJECT_MATCHES: ProjectMatch[] = [
-  {
-    id: 1,
-    title: 'Modern SaaS Landing Page Design',
-    matchPct: 98,
-    budget: '$2,500',
-    budgetType: 'Fixed Budget',
-    client: 'MetaScale Labs',
-    postedTime: 'Posted 2h ago',
-    location: 'United States',
-    description:
-      "We're looking for a top-tier UI designer to revamp our core landing page. Experience with Tailwind CSS and dark mode aesth must. Must be able to deliver high-fidelity prototypes in Figma...",
-    tags: ['UI Design', 'Tailwind CSS', 'Responsive'],
-  },
-  {
-    id: 2,
-    title: 'Full-stack React/Node Developer',
-    matchPct: 92,
-    budget: '$65/hr',
-    budgetType: 'Hourly Rate',
-    client: 'FinGo Tech',
-    postedTime: 'Posted 5h ago',
-    location: 'Remote (Global)',
-    description:
-      'Need an experienced developer to help us integrate a new payment gateway and refactor our dashboard components. Long term project with potential for extension.',
-    tags: ['React', 'Node.js', 'API Integration'],
-  },
-  {
-    id: 3,
-    title: 'E-commerce Mobile Design',
-    matchPct: 85,
-    budget: '$4,000',
-    budgetType: 'Fixed Budget',
-    client: 'UrbanThreads',
-    postedTime: 'Posted 1d ago',
-    location: 'United Kingdom',
-    description:
-      'UI/UX designer needed for a fashion e-commerce application. Focus on mobile-first design and conversion optimization.',
-    tags: ['Mobile Design', 'Figma'],
-  },
-]
+/** Determine whether a budget string is hourly or fixed. */
+function parseBudgetType(budget: string): { amount: string; type: string } {
+  if (!budget || budget === '0' || budget === '0.00') {
+    return { amount: 'Negotiable', type: 'Budget TBD' }
+  }
 
-const MOCK_PROPOSALS: Proposal[] = [
-  ...Array.from({ length: 6 }).flatMap((_, i) => [
-    { id: i * 4 + 1, date: 'Oct 24, 2023', title: 'E-commerce Redesign Strategy', status: 'Sent', client: 'Shopify Plus Partner' } as Proposal,
-    { id: i * 4 + 2, date: 'Oct 22, 2023', title: 'Mobile App UI/UX Discovery', status: 'Accepted', client: 'FinTech Solutions' } as Proposal,
-    { id: i * 4 + 3, date: 'Oct 18, 2023', title: 'SaaS Landing Page Concept', status: 'In Review', client: 'CloudFlow Inc.' } as Proposal,
-    { id: i * 4 + 4, date: 'Oct 12, 2023', title: 'Brand Identity System', status: 'Rejected', client: 'Apex Marketing' } as Proposal,
-  ])
-]
+  const lower = budget.toLowerCase()
+  const isHourly = lower.includes('/hr') || lower.includes('hour') || lower.includes('hourly')
+  const type = isHourly ? 'Hourly Rate' : 'Fixed Budget'
 
-const api = axios.create({ baseURL: '/api' })
+  // If the string contains multiple numbers (like a range "50-100") or 
+  // already has formatting like currency/commas, we should be conservative.
+  const hasRangeSeparator = budget.includes('-') || budget.includes('–') || lower.includes(' to ')
+  const digitGroups = budget.match(/\d+/g) || []
+  
+  // If it's a clear range or already complex, return it as-is to avoid mangling
+  if (hasRangeSeparator || digitGroups.length > 1 || budget.includes('$')) {
+    return { amount: budget, type }
+  }
+
+  // If it's a raw numeric string, format it with currency and thousands separators
+  const numeric = parseFloat(budget.replace(/[^0-9.]/g, ''))
+  if (!isNaN(numeric)) {
+    return {
+      amount: `$${numeric.toLocaleString()}`,
+      type
+    }
+  }
+
+  return { amount: budget, type }
+}
+
+export function mapApiProjectToProjectMatch(project: ApiProject): ProjectMatch {
+  const { amount, type } = parseBudgetType(project.budget)
+  return {
+    id: project.id,
+    title: project.title,
+    matchPct: Math.round(project.match_score),
+    budget: amount,
+    budgetType: type,
+    client: project.platform_name || 'Unknown client',
+    postedTime: relativePostedTime(project.posted_date),
+    location: 'Remote',  // project listings often don't specify; default to Remote
+    description: project.description,
+    tags: project.required_skills.slice(0, 4),
+    sourceUrl: project.source_url,
+    platform: project.platform_name,
+    deadline: project.deadline,
+  }
+}
+
+/** Map an API proposal status string to the UI-facing label. */
+function mapProposalStatus(
+  status: ApiProposal['status'],
+): Proposal['status'] {
+  switch (status) {
+    case 'accepted': return 'Accepted'
+    case 'rejected': return 'Rejected'
+    case 'in_review': return 'In Review'
+    default: return 'Sent'
+  }
+}
+
+/** Map a freshly-created ApiProposal (from opportunitiesApi) to the frontend Proposal shape. */
+export function mapApiProposalToProposal(p: ApiProposal): Proposal {
+  const title =
+    p.job_details?.title ??
+    p.project_details?.title ??
+    `Proposal #${p.id}`
+  const client =
+    p.job_details?.company ??
+    p.project_details?.platform_name ??
+    'Unknown'
+  return {
+    id: p.id,
+    date: new Date(p.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }),
+    title,
+    status: mapProposalStatus(p.status),
+    client,
+  }
+}
+
+/**
+ * Map a DocApiProposal (from /api/documents/proposals/) to the
+ * frontend Proposal shape. The field structure is identical to ApiProposal
+ * but comes from the documents namespace endpoint.
+ */
+export function mapDocProposalToProposal(p: DocApiProposal): Proposal {
+  const title =
+    p.job_details?.title ??
+    p.project_details?.title ??
+    `Proposal #${p.id}`
+  const client =
+    p.job_details?.company ??
+    p.project_details?.platform_name ??
+    'Unknown'
+  return {
+    id: p.id,
+    date: new Date(p.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }),
+    title,
+    // DocProposalStatus and ProposalStatus share the same values
+    status: mapProposalStatus(p.status as ApiProposal['status']),
+    client,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API functions
+// ---------------------------------------------------------------------------
 
 export async function getProjectMatches(): Promise<ProjectMatch[]> {
-  await delay(800)
-  void api
-  return MOCK_PROJECT_MATCHES
+  const raw = await fetchProjects()
+  return raw.map(mapApiProjectToProjectMatch)
 }
 
+/**
+ * Fetch proposals from GET /api/documents/proposals/.
+ * The documents endpoint returns richer data (job_details, project_details)
+ * that we map down to the lightweight frontend Proposal shape.
+ */
 export async function getProposals(): Promise<Proposal[]> {
-  await delay(800)
-  return MOCK_PROPOSALS
+  const raw = await fetchDocumentProposals()
+  return raw.map(mapDocProposalToProposal)
 }
+
+/**
+ * Fetch a single proposal by id from GET /api/documents/proposals/{id}/.
+ * Returns the lightweight frontend Proposal shape.
+ */
+export async function getProposalById(id: number): Promise<Proposal> {
+  const raw = await fetchDocumentProposalById(id)
+  return mapDocProposalToProposal(raw)
+}
+
+/**
+ * Partially update a proposal's status via PATCH /api/documents/proposals/{id}/.
+ * Only the changed fields need to be provided.
+ */
+export async function updateProposalStatus(
+  id: number,
+  payload: PatchProposalPayload,
+): Promise<Proposal> {
+  const raw = await patchDocumentProposal(id, payload)
+  return mapDocProposalToProposal(raw)
+}
+
+/** Create a new proposal for the given job or project. */
+export async function submitProposal(
+  payload: CreateProposalPayload,
+): Promise<Proposal> {
+  const created = await apiCreateProposal(payload)
+  return mapApiProposalToProposal(created)
+}
+
+// Re-export payload types for use in slices / pages
+export type { CreateProposalPayload, PatchProposalPayload, DocProposalStatus }

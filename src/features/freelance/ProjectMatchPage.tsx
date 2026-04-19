@@ -1,10 +1,36 @@
-import { useEffect } from 'react'
-import { Clock, MapPin, User, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ChevronDown, ChevronUp, Clock, ExternalLink, Loader2, MapPin, User, Zap } from 'lucide-react'
 import type { ProjectMatch } from '@/services/freelanceApi'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { fetchProjectMatches, selectProjectMatchesState } from '@/store/slices/freelanceSlice'
+import {
+  createProposal,
+  fetchProjectMatches,
+  selectProjectMatchesState,
+} from '@/store/slices/freelanceSlice'
 
 function ProjectCard({ project }: { project: ProjectMatch }) {
+  const dispatch = useAppDispatch()
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  async function handleSendProposal() {
+    if (submitting || submitted) return
+    setSubmitting(true)
+    try {
+      await dispatch(
+        createProposal({
+          project: project.id,
+          content: `Proposal for: ${project.title}`,
+          status: 'sent',
+        })
+      ).unwrap()
+      setSubmitted(true)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row gap-6 md:gap-8">
       <div className="flex-1 space-y-4">
@@ -31,7 +57,25 @@ function ProjectCard({ project }: { project: ProjectMatch }) {
           </div>
         </div>
 
-        <p className="text-base leading-relaxed text-slate-600 pt-1">{project.description}</p>
+        <div className="relative">
+          <p className={`text-base leading-relaxed text-slate-600 pt-1 transition-all duration-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
+            {project.description}
+          </p>
+          {!isExpanded && (
+            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+          )}
+        </div>
+
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-bold transition-colors"
+        >
+          {isExpanded ? (
+            <><ChevronUp size={16} /> Show Less</>
+          ) : (
+            <><ChevronDown size={16} /> View Details</>
+          )}
+        </button>
 
         <div className="flex flex-wrap gap-2 pt-1">
           {project.tags.map((tag) => (
@@ -51,9 +95,35 @@ function ProjectCard({ project }: { project: ProjectMatch }) {
           <div className="text-sm font-medium text-slate-500 mt-1">{project.budgetType}</div>
         </div>
 
-        <button className="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold rounded-lg transition-colors">
-          Send Proposal
-        </button>
+        <div className="flex flex-col gap-2 w-full md:w-auto">
+          {project.sourceUrl ? (
+            <a
+              href={project.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full md:w-auto px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
+            >
+              View Listing <ExternalLink size={13} />
+            </a>
+          ) : null}
+          <button
+            onClick={() => void handleSendProposal()}
+            disabled={submitting || submitted}
+            className={`w-full md:w-auto px-6 py-2.5 text-white text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              submitted
+                ? 'bg-emerald-500 cursor-default'
+                : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-70'
+            }`}
+          >
+            {submitting ? (
+              <><Loader2 size={16} className="animate-spin" /> Sending…</>
+            ) : submitted ? (
+              '✓ Proposal Sent'
+            ) : (
+              'Send Proposal'
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )

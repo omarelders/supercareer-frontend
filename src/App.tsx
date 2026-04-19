@@ -22,38 +22,41 @@ import SecurityPage from '@/features/settings/SecurityPage'
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import { store } from '@/store/store'
+import { AuthProvider } from '@/context/AuthContext'
 
 function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
-        <Routes>
-          <Route path={ROUTES.home} element={<MarketingPage />} />
+        <AuthProvider>
+          <Routes>
+            <Route path={ROUTES.home} element={<MarketingPage />} />
 
-          <Route element={<AuthLayout />}>
-            <Route path={ROUTES.login} element={<LoginPage />} />
-            <Route path={ROUTES.register} element={<RegisterPage />} />
-            <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
-            <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
-            <Route path={ROUTES.resetSuccess} element={<ResetSuccessPage />} />
-            <Route path={ROUTES.verifyEmail} element={<VerifyEmailPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
-              <Route path={ROUTES.dashboard} element={<DashboardPage />} />
-              <Route path={ROUTES.jobs.jobMatch} element={<JobMatchPage />} />
-              <Route path={ROUTES.jobs.customCv} element={<CustomCVPage />} />
-              <Route path={ROUTES.freelance.projectMatch} element={<ProjectMatchPage />} />
-              <Route path={ROUTES.freelance.proposal} element={<ProposalPage />} />
-              <Route path={ROUTES.cvBuilder} element={<CVBuilderPage />} />
-              <Route path={ROUTES.notifications} element={<NotificationsPage />} />
-              <Route path={ROUTES.settings.profile} element={<ProfilePage />} />
-              <Route path={ROUTES.settings.preferences} element={<PreferencesPage />} />
-              <Route path={ROUTES.settings.security} element={<SecurityPage />} />
+            <Route element={<AuthLayout />}>
+              <Route path={ROUTES.login} element={<LoginPage />} />
+              <Route path={ROUTES.register} element={<RegisterPage />} />
+              <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
+              <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+              <Route path={ROUTES.resetSuccess} element={<ResetSuccessPage />} />
+              <Route path={ROUTES.verifyEmail} element={<VerifyEmailPage />} />
             </Route>
-          </Route>
-        </Routes>
+
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+                <Route path={ROUTES.jobs.jobMatch} element={<JobMatchPage />} />
+                <Route path={ROUTES.jobs.customCv} element={<CustomCVPage />} />
+                <Route path={ROUTES.freelance.projectMatch} element={<ProjectMatchPage />} />
+                <Route path={ROUTES.freelance.proposal} element={<ProposalPage />} />
+                <Route path={ROUTES.cvBuilder} element={<CVBuilderPage />} />
+                <Route path={ROUTES.notifications} element={<NotificationsPage />} />
+                <Route path={ROUTES.settings.profile} element={<ProfilePage />} />
+                <Route path={ROUTES.settings.preferences} element={<PreferencesPage />} />
+                <Route path={ROUTES.settings.security} element={<SecurityPage />} />
+              </Route>
+            </Route>
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </Provider>
   )

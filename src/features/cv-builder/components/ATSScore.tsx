@@ -13,13 +13,20 @@ import {
 import { CheckCircle2, Download, Save, Zap, HelpCircle } from 'lucide-react';
 import type { CVData } from '../types';
 import { generatePDFFromCV } from '../utils/pdfGenerator';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { saveCvDocument, selectCvDocumentState } from '@/store/slices/cvDocumentSlice';
+import { selectUser } from '@/store/slices/authSlice';
 
 interface ATSScoreProps {
   data: CVData;
 }
 
 export function ATSScore({ data }: ATSScoreProps) {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
+  const { isSaving, lastSaved, error: saveError } = useAppSelector(selectCvDocumentState);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
@@ -30,6 +37,34 @@ export function ATSScore({ data }: ATSScoreProps) {
       alert('Failed to generate PDF. Please try again.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Serialize CVData to JSON, compute a simple ATS score heuristic,
+   * and POST to /api/documents/cv/create/.
+   */
+  const handleSaveDraft = async () => {
+    if (isSaving) return;
+    setSaveSuccess(false);
+
+    // Derive user id from auth state (stored as { id: number, ... })
+    const userId = typeof user?.id === 'number' ? user.id : 0;
+
+    // Simple ATS heuristic: 60 base + up to 40 pts for skills breadth
+    const atsScore = Math.min(100, 60 + Math.min(40, data.skills.length * 4));
+
+    const result = await dispatch(
+      saveCvDocument({
+        content: JSON.stringify(data),
+        ats_score: atsScore,
+        user: userId,
+        job: null,
+      })
+    );
+
+    if (saveCvDocument.fulfilled.match(result)) {
+      setSaveSuccess(true);
     }
   };
 
@@ -243,9 +278,29 @@ export function ATSScore({ data }: ATSScoreProps) {
         >
           {isGenerating ? 'Generating PDF...' : 'Download PDF'}
         </Button>
-        <Button size="xl" radius="md" variant="outline" color="#135BEC" leftSection={<Save size={20} />}>
-          Save Draft
-        </Button>
+        <Stack gap={4}>
+          <Button
+            size="xl"
+            radius="md"
+            variant="outline"
+            color={saveSuccess ? 'green' : '#135BEC'}
+            leftSection={<Save size={20} />}
+            onClick={handleSaveDraft}
+            loading={isSaving}
+            disabled={isSaving || saveSuccess}
+          >
+            {saveSuccess
+              ? `Saved (ID #${lastSaved?.id})`
+              : isSaving
+              ? 'Saving...'
+              : 'Save Draft'}
+          </Button>
+          {saveError && (
+            <Text size="xs" c="red" ta="center">
+              {saveError}
+            </Text>
+          )}
+        </Stack>
       </Group>
 
       {/* Actions - Mobile */}
@@ -262,9 +317,30 @@ export function ATSScore({ data }: ATSScoreProps) {
         >
           {isGenerating ? 'Generating PDF...' : 'Download PDF'}
         </Button>
-        <Button fullWidth size="lg" radius="md" variant="outline" color="#135BEC" leftSection={<Save size={20} />}>
-          Save Draft
-        </Button>
+        <Stack gap={4}>
+          <Button
+            fullWidth
+            size="lg"
+            radius="md"
+            variant="outline"
+            color={saveSuccess ? 'green' : '#135BEC'}
+            leftSection={<Save size={20} />}
+            onClick={handleSaveDraft}
+            loading={isSaving}
+            disabled={isSaving || saveSuccess}
+          >
+            {saveSuccess
+              ? `Saved (ID #${lastSaved?.id})`
+              : isSaving
+              ? 'Saving...'
+              : 'Save Draft'}
+          </Button>
+          {saveError && (
+            <Text size="xs" c="red" ta="center">
+              {saveError}
+            </Text>
+          )}
+        </Stack>
       </Stack>
     </Stack>
   );

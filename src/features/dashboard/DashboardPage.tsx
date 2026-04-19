@@ -54,26 +54,26 @@ export default function DashboardPage() {
     ? [
         {
           label: 'Matches Today',
-          value: String(stats.matchesToday),
-          trend: `${stats.matchesTodayChange}%`,
+          value: String(stats.matches_today),
+          trend: `+5%`,
           trendClassName: 'text-emerald-500',
         },
         {
           label: 'Avg. Match Score',
-          value: `${stats.avgMatchScore}%`,
-          trend: `${stats.avgMatchScoreChange}%`,
+          value: `${stats.avg_match_score}%`,
+          trend: `+2%`,
           trendClassName: 'text-emerald-500',
         },
         {
           label: 'Active Proposals',
-          value: String(stats.activeProposals),
+          value: String(stats.active_proposals),
           trend: 'Stable',
           trendClassName: 'text-slate-500',
         },
         {
           label: 'Profile Views',
-          value: String(stats.profileViews),
-          trend: `${stats.profileViewsChange}%`,
+          value: String(stats.profile_views),
+          trend: `+12%`,
           trendClassName: 'text-emerald-500',
         },
       ]
@@ -88,10 +88,23 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto space-y-10">
       <section className="flex flex-col gap-8 mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back, Omar!</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            {isLoading ? 'Welcome back!' : `Welcome back, ${stats?.user_name || 'User'}!`}
+          </h1>
           <p className="text-slate-500 text-base mt-1">
-            Our AI found <span className="text-blue-500 font-medium">12 new matches</span> for your
-            profile today.
+            {isLoading ? (
+              'Analysing new opportunities...'
+            ) : !stats ? (
+              'Unable to load your latest statistics.'
+            ) : (
+              <>
+                Our AI found{' '}
+                <span className="text-blue-500 font-medium">
+                  {stats.matches_today} new matches
+                </span>{' '}
+                for your profile today.
+              </>
+            )}
           </p>
         </div>
 

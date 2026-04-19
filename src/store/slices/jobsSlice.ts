@@ -8,6 +8,7 @@ import {
   type JobMatchPageResponse,
   type JobType,
 } from '@/services/jobsApi'
+import { refreshProjects } from '@/services/opportunitiesApi'
 
 const JOB_MATCH_PAGE_SIZE = 6
 const ALL_FILTER_VALUE = 'All'
@@ -36,8 +37,10 @@ interface JobsState {
   hasMore: boolean
   isInitialLoading: boolean
   isLoadingMore: boolean
+  isRefreshing: boolean
   error: string | null
   loadMoreError: string | null
+  refreshError: string | null
   viewMode: JobViewMode
   filters: JobFilterState
   queryKey: string
@@ -50,8 +53,10 @@ const initialState: JobsState = {
   hasMore: true,
   isInitialLoading: true,
   isLoadingMore: false,
+  isRefreshing: false,
   error: null,
   loadMoreError: null,
+  refreshError: null,
   viewMode: 'grid',
   filters: DEFAULT_JOB_FILTERS,
   queryKey: JSON.stringify(DEFAULT_JOB_FILTERS),
@@ -117,6 +122,30 @@ export const loadMoreJobMatches = createAsyncThunk<
   }
 )
 
+/**
+ * Triggers the backend scraper to import fresh jobs, then re-fetches the
+ * first page so the UI is immediately populated.
+ */
+export const refreshAndFetchJobs = createAsyncThunk<
+  JobMatchPageResponse,
+  void,
+  { state: RootState; rejectValue: string }
+>('jobs/refreshAndFetch', async (_, { getState, rejectWithValue }) => {
+  try {
+    // 1. Trigger the project scraper (jobs share the same refresh pipeline)
+    await refreshProjects()
+    // 2. Re-fetch the first page with current filters
+    const state = getState().jobs
+    return await getJobMatches({
+      page: 1,
+      pageSize: JOB_MATCH_PAGE_SIZE,
+      filters: toApiFilters(state.filters),
+    })
+  } catch {
+    return rejectWithValue('Failed to refresh job matches. Please try again.')
+  }
+})
+
 const jobsSlice = createSlice({
   name: 'jobs',
   initialState,
@@ -141,10 +170,9 @@ const jobsSlice = createSlice({
         state.loadMoreError = null
       })
       .addCase(fetchInitialJobMatches.fulfilled, (state, action) => {
-        if (action.payload.queryKey !== state.queryKey) {
-          return
-        }
         state.isInitialLoading = false
+        // Discard stale responses (filter changed while request was in-flight)
+        if (action.payload.queryKey !== state.queryKey) return
         state.items = action.payload.response.items
         state.page = action.payload.response.page
         state.total = action.payload.response.total
@@ -173,10 +201,26 @@ const jobsSlice = createSlice({
       })
       .addCase(loadMoreJobMatches.rejected, (state, action) => {
         state.isLoadingMore = false
-        if (action.error.name === 'AbortError') {
-          return
-        }
+        if (action.error.name === 'AbortError') return
         state.loadMoreError = action.payload ?? 'Failed to load more matches.'
+      })
+      // refreshAndFetchJobs
+      .addCase(refreshAndFetchJobs.pending, (state) => {
+        state.isRefreshing = true
+        state.refreshError = null
+        state.error = null
+      })
+      .addCase(refreshAndFetchJobs.fulfilled, (state, action) => {
+        state.isRefreshing = false
+        state.isInitialLoading = false
+        state.items = action.payload.items
+        state.page = action.payload.page
+        state.total = action.payload.total
+        state.hasMore = action.payload.hasMore
+      })
+      .addCase(refreshAndFetchJobs.rejected, (state, action) => {
+        state.isRefreshing = false
+        state.refreshError = action.payload ?? 'Failed to refresh jobs.'
       })
   },
 })

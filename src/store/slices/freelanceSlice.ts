@@ -1,6 +1,15 @@
 import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
-import { getProjectMatches, getProposals, type ProjectMatch, type Proposal } from '@/services/freelanceApi'
+import {
+  getProjectMatches,
+  getProposals,
+  submitProposal,
+  updateProposalStatus,
+  type ProjectMatch,
+  type Proposal,
+  type CreateProposalPayload,
+  type PatchProposalPayload,
+} from '@/services/freelanceApi'
 
 const PROPOSAL_PAGE_SIZE = 5
 
@@ -58,6 +67,30 @@ export const fetchProposals = createAsyncThunk<
     return await getProposals()
   } catch {
     return rejectWithValue('Failed to load proposals.')
+  }
+})
+
+export const createProposal = createAsyncThunk<
+  Proposal,
+  CreateProposalPayload,
+  { rejectValue: string }
+>('freelance/createProposal', async (payload, { rejectWithValue }) => {
+  try {
+    return await submitProposal(payload)
+  } catch {
+    return rejectWithValue('Failed to submit proposal.')
+  }
+})
+
+export const patchProposal = createAsyncThunk<
+  Proposal,
+  { id: number; payload: PatchProposalPayload },
+  { rejectValue: string }
+>('freelance/patchProposal', async ({ id, payload }, { rejectWithValue }) => {
+  try {
+    return await updateProposalStatus(id, payload)
+  } catch {
+    return rejectWithValue('Failed to update proposal.')
   }
 })
 
@@ -119,6 +152,24 @@ const freelanceSlice = createSlice({
           return
         }
         state.proposals.error = action.payload ?? 'Failed to load proposals.'
+      })
+      // createProposal
+      .addCase(createProposal.fulfilled, (state, action) => {
+        // Optimistically prepend the new proposal
+        state.proposals.items = [action.payload, ...state.proposals.items]
+      })
+      .addCase(createProposal.rejected, (state, action) => {
+        state.proposals.error = action.payload ?? 'Failed to submit proposal.'
+      })
+      // patchProposal – update in-place
+      .addCase(patchProposal.fulfilled, (state, action) => {
+        const idx = state.proposals.items.findIndex((p) => p.id === action.payload.id)
+        if (idx !== -1) {
+          state.proposals.items[idx] = action.payload
+        }
+      })
+      .addCase(patchProposal.rejected, (state, action) => {
+        state.proposals.error = action.payload ?? 'Failed to update proposal.'
       })
   },
 })

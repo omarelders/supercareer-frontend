@@ -1,11 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock } from 'lucide-react'
 import Logo from '../../components/Logo'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useAppDispatch } from '@/store/hooks'
-import { login } from '@/store/slices/authSlice'
+import { useAuth } from '@/context/AuthContext'
 import AnimatedContent from '@/components/reactbits/AnimatedContent'
 import GlareHover from '@/components/reactbits/GlareHover'
 
@@ -19,7 +19,16 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const { login, isAuthenticated } = useAuth()
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // ── Navigate AFTER React commits isAuthenticated = true ──
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const {
     register,
@@ -34,9 +43,20 @@ export default function LoginPage() {
     },
   })
 
-  function onSubmit() {
-    dispatch(login())
-    navigate('/dashboard')
+  async function onSubmit(values: LoginFormValues) {
+    setServerError(null)
+    setIsSubmitting(true)
+    try {
+      await login(values.email, values.password)
+      // Navigation happens via AuthContext state triggers + ProtectedRoute
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } }
+      const detail = axiosErr?.response?.data?.detail
+      const genericMsg = err instanceof Error ? err.message : 'Invalid email or password. Please try again.'
+      setServerError(detail ?? genericMsg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -115,6 +135,12 @@ export default function LoginPage() {
               </label>
             </div>
 
+            {serverError && (
+              <p className="text-sm font-medium text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                {serverError}
+              </p>
+            )}
+
             <GlareHover
               className="w-full border-0"
               width="100%"
@@ -130,9 +156,10 @@ export default function LoginPage() {
               <button
                 id="login-submit"
                 type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-base py-3.5 rounded-xl mt-2"
+                disabled={isSubmitting}
+                className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base py-3.5 rounded-xl mt-2 transition-colors"
               >
-                Login
+                {isSubmitting ? 'Signing in…' : 'Login'}
               </button>
             </GlareHover>
 

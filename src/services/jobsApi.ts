@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { fetchJobs, type ApiJob } from './opportunitiesApi'
 import { delay } from './request'
 
 
@@ -53,106 +53,7 @@ export interface CustomCV {
 }
 
 
-const MOCK_JOB_MATCHES: JobMatch[] = [
-  {
-    id: 1,
-    title: 'Senior UX Designer',
-    company: 'Design Studio',
-    location: 'Remote',
-    jobType: 'Contract',
-    matchPct: 98,
-    iconName: 'Cloud',
-    features: [
-      { text: 'Figma, Design Systems, Prototyping', type: 'check' },
-      { text: '5+ Years Experience', type: 'check' },
-      { text: 'Budget: $120k - $150k', type: 'info' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Frontend Developer',
-    company: 'TechCorp',
-    location: 'Hybrid',
-    jobType: 'Full-time',
-    matchPct: 95,
-    iconName: 'Terminal',
-    features: [
-      { text: 'React, Tailwind, TypeScript', type: 'check' },
-      { text: 'Available immediately', type: 'check' },
-      { text: 'Industry: SaaS, FinTech', type: 'info' },
-    ],
-  },
-  {
-    id: 3,
-    title: 'Product Manager',
-    company: 'Innovate Solutions',
-    location: 'Remote',
-    jobType: 'Full-time',
-    matchPct: 92,
-    iconName: 'Share2',
-    features: [
-      { text: 'Agile, Roadmap, Data Analysis', type: 'check' },
-      { text: 'B2B Product Experience', type: 'check' },
-      { text: 'Location match: 100%', type: 'info' },
-    ],
-  },
-  {
-    id: 4,
-    title: 'Backend Engineer',
-    company: 'Cloud Systems',
-    location: 'On-site',
-    jobType: 'Full-time',
-    matchPct: 91,
-    iconName: 'Database',
-    features: [
-      { text: 'Node.js, PostgreSQL, Redis', type: 'check' },
-      { text: 'Requires Relocation', type: 'info' },
-      { text: 'Seniority: Expert', type: 'check' },
-    ],
-  },
-  {
-    id: 5,
-    title: 'Data Scientist',
-    company: 'Data Insights',
-    location: 'Remote',
-    jobType: 'Contract',
-    matchPct: 90,
-    iconName: 'BarChart2',
-    features: [
-      { text: 'Python, PyTorch, SQL', type: 'check' },
-      { text: "Ph.D. or Master's in STEM", type: 'check' },
-      { text: 'Budget: $140k - $180k', type: 'info' },
-    ],
-  },
-  {
-    id: 6,
-    title: 'Creative Director',
-    company: 'Media Agency',
-    location: 'Hybrid',
-    jobType: 'Part-time',
-    matchPct: 90,
-    iconName: 'Palette',
-    features: [
-      { text: 'Brand Vision, Art Direction', type: 'check' },
-      { text: 'Strong Portfolio', type: 'check' },
-      { text: 'Contract: 6 Months', type: 'info' },
-    ],
-  },
-]
 
-const TOTAL_MOCK_JOB_MATCHES = 24
-const EXTENDED_MOCK_JOB_MATCHES: JobMatch[] = Array.from(
-  { length: TOTAL_MOCK_JOB_MATCHES },
-  (_, index) => {
-    const base = MOCK_JOB_MATCHES[index % MOCK_JOB_MATCHES.length]
-    const cycle = Math.floor(index / MOCK_JOB_MATCHES.length)
-    return {
-      ...base,
-      id: index + 1,
-      company: cycle === 0 ? base.company : `${base.company} ${cycle + 1}`,
-    }
-  }
-)
 
 const MOCK_CUSTOM_CVS: CustomCV[] = [
   ...Array.from({ length: 4 }).flatMap((_, i) => [
@@ -165,31 +66,95 @@ const MOCK_CUSTOM_CVS: CustomCV[] = [
   ])
 ]
 
-const api = axios.create({ baseURL: '/api' })
+// Icon heuristic: pick an icon based on the job's source platform or title keywords
+const PLATFORM_ICON_MAP: Record<string, JobIconName> = {
+  linkedin: 'Share2',
+  upwork: 'Cloud',
+  toptal: 'Terminal',
+  freelancer: 'BarChart2',
+  fiverr: 'Palette',
+  indeed: 'Database',
+  glassdoor: 'BarChart2',
+}
 
+function resolveIconName(job: ApiJob): JobIconName {
+  const platform = (job.source_platform ?? '').toLowerCase()
+  for (const [key, icon] of Object.entries(PLATFORM_ICON_MAP)) {
+    if (platform.includes(key)) return icon
+  }
+  // Fallback: keyword scan of title
+  const title = job.title.toLowerCase()
+  if (title.includes('design') || title.includes('ui') || title.includes('ux')) return 'Palette'
+  if (title.includes('data') || title.includes('analyst')) return 'BarChart2'
+  if (title.includes('backend') || title.includes('database') || title.includes('db')) return 'Database'
+  if (title.includes('devops') || title.includes('cloud') || title.includes('infra')) return 'Cloud'
+  if (title.includes('frontend') || title.includes('react') || title.includes('vue')) return 'Terminal'
+  return 'Share2'
+}
 
+function resolveLocation(raw: string): JobLocation {
+  const lower = raw.toLowerCase()
+  if (lower.includes('remote')) return 'Remote'
+  if (lower.includes('hybrid')) return 'Hybrid'
+  return 'On-site'
+}
+
+/** Map a raw API job to the frontend JobMatch shape. */
+export function mapApiJobToJobMatch(job: ApiJob): JobMatch {
+  // Build feature bullets from description sentences (max 3)
+  const sentences = job.description
+    .replace(/\n+/g, ' ')
+    .split(/\.\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+
+  const features: JobFeature[] = sentences.map((text, i) => ({
+    text,
+    type: i === 0 ? 'check' : 'info',
+  }))
+
+  if (features.length === 0) {
+    features.push({ text: job.location, type: 'info' })
+  }
+
+  return {
+    id: job.id,
+    title: job.title,
+    company: job.company,
+    location: resolveLocation(job.location),
+    jobType: 'Full-time',        // backend doesn't expose this yet
+    matchPct: Math.round(job.match_score),
+    iconName: resolveIconName(job),
+    features,
+  }
+}
 
 export async function getJobMatches(
   params: GetJobMatchesParams = {}
 ): Promise<JobMatchPageResponse> {
   const { page = 1, pageSize = 6, filters } = params
-  await delay(800)
-  void api
+
+  // Fetch real data from the backend
+  const rawJobs = await fetchJobs()
+
+  if (import.meta.env.DEV) {
+    console.log(`[jobsApi] fetchJobs returned ${rawJobs.length} jobs`, rawJobs)
+  }
+
+  const mapped = rawJobs.map(mapApiJobToJobMatch)
+
   const safePage = Math.max(1, Math.floor(page))
   const safePageSize = Math.max(1, Math.floor(pageSize))
   const minMatchPct = filters?.minMatchPct
-  const filteredMatches = EXTENDED_MOCK_JOB_MATCHES.filter((job) => {
-    if (filters?.location && job.location !== filters.location) {
-      return false
-    }
-    if (filters?.type && job.jobType !== filters.type) {
-      return false
-    }
-    if (typeof minMatchPct === 'number' && job.matchPct < minMatchPct) {
-      return false
-    }
+
+  const filteredMatches = mapped.filter((job) => {
+    if (filters?.location && job.location !== filters.location) return false
+    if (filters?.type && job.jobType !== filters.type) return false
+    if (typeof minMatchPct === 'number' && job.matchPct < minMatchPct) return false
     return true
   })
+
   const start = (safePage - 1) * safePageSize
   const end = start + safePageSize
   const items = filteredMatches.slice(start, end)
