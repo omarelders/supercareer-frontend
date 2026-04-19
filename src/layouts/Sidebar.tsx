@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '@/context/AuthContext'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   ChevronDown,
@@ -83,7 +84,25 @@ function NavSection({ item }: { item: NavigationItem }) {
 }
 
 
+/** Derive up to 2 initials from a display name or email. */
+function getInitials(name: string): string {
+  const words = name.trim().split(/[\s@._-]+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+
 export default function Sidebar() {
+  const { user } = useAuth()
+
+  const displayName =
+    (user?.full_name as string | undefined) ??
+    (user?.username as string | undefined) ??
+    (user?.email as string | undefined) ??
+    'User'
+
+  const role = (user?.role as string | undefined) ?? 'Member'
+  const initials = getInitials(displayName)
+
   return (
     <aside className="w-50 shrink-0 flex flex-col h-full border-r border-slate-200 bg-white">
       <Logo className="px-4 py-5" />
@@ -106,14 +125,15 @@ export default function Sidebar() {
 
       <div className="px-3 py-3 border-t border-slate-200">
         <div className="flex items-center gap-2.5">
-          <img
-            src="https://i.pravatar.cc/40?img=33"
-            alt="Omar Elders"
-            className="w-8 h-8 rounded-full object-cover"
-          />
+          <div
+            aria-hidden="true"
+            className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0"
+          >
+            <span className="text-xs font-bold text-white leading-none">{initials}</span>
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">Omar Elders</p>
-            <p className="text-xs text-slate-400 truncate">Pro Member</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
+            <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
           </div>
           <button aria-label="User profile options" className="text-slate-400 hover:text-slate-600 transition-colors">
             <MoreHorizontal size={16} />
