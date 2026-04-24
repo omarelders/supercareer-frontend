@@ -6,18 +6,18 @@ export default function HeroSection() {
   return (
     <section className="relative pt-10 pb-32 bg-muted overflow-hidden">
       <div
-        className="absolute inset-x-20 top-28 bottom-0 pointer-events-none"
+        className="absolute inset-x-0 md:inset-x-20 top-28 bottom-0 pointer-events-none"
         style={{ background: 'radial-gradient(119.6% 182.3% at 100% 0%, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0) 100%), radial-gradient(119.6% 182.3% at 0% 100%, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0) 100%)' }}
       />
 
-      <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-marketing-hero gap-24 items-center relative z-10">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 lg:grid-cols-marketing-hero gap-12 lg:gap-24 items-center relative z-10">
         <div className="flex flex-col gap-6">
           <div className="inline-flex items-center gap-2 bg-sky-100 px-3 py-1 rounded-full w-fit">
             <div className="w-2 h-2 rounded-full bg-sky-400" />
             <span className="text-sky-700 text-xs font-bold uppercase tracking-wider">AI-POWERED MATCHING HUB</span>
           </div>
 
-          <h1 className="text-7xl font-extrabold text-foreground leading-none tracking-tighter">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-foreground leading-none md:leading-none tracking-tighter">
             The Future of<br />Super Career
           </h1>
 
@@ -25,20 +25,20 @@ export default function HeroSection() {
             Stop searching, start matching. Our AI crawls thousands of sources daily to find high-intent roles that fit your skill profile with 90%+ accuracy.
           </p>
 
-          <div className="flex items-center gap-4 mt-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 mt-2">
             <Link
               to={ROUTES.login}
-              className="bg-primary text-white font-semibold text-lg px-8 h-16 rounded-xl flex items-center gap-2 transition-all hover:bg-blue-700"
+              className="bg-primary text-white font-semibold text-lg px-8 h-14 md:h-16 rounded-xl flex items-center justify-center gap-2 transition-all hover:bg-blue-700"
               style={{ boxShadow: '0px 20px 25px -5px rgba(36, 172, 235, 0.3), 0px 8px 10px -6px rgba(36, 172, 235, 0.3)' }}
             >
               Get Started Free <ArrowRight size={20} className="ml-1" strokeWidth={2} />
             </Link>
-            <button className="bg-white border border-blue-600 text-primary font-semibold text-lg px-8 h-16 rounded-xl hover:bg-blue-50 transition-colors">
+            <button className="bg-white border border-blue-600 text-primary font-semibold text-lg px-8 h-14 md:h-16 rounded-xl hover:bg-blue-50 transition-colors">
               See How It Works
             </button>
           </div>
 
-          <div className="flex items-center gap-3 mt-2 pr-72">
+          <div className="flex items-center gap-3 mt-2 pr-0 md:pr-72">
             <div className="flex">
               <img src="https://ui-avatars.com/api/?name=A&background=random&color=fff&size=32" className="w-8 h-8 rounded-full border-2 border-white -ml-2 first:ml-0" />
               <img src="https://ui-avatars.com/api/?name=B&background=random&color=fff&size=32" className="w-8 h-8 rounded-full border-2 border-white -ml-2" />

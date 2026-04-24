@@ -104,7 +104,7 @@ export default function Sidebar() {
   const initials = getInitials(displayName)
 
   return (
-    <aside className="w-50 shrink-0 flex flex-col h-full border-r border-slate-200 bg-white">
+    <aside className="hidden md:flex w-50 shrink-0 flex-col h-full border-r border-slate-200 bg-white">
       <Logo className="px-4 py-5" />
 
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">

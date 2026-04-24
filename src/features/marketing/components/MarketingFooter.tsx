@@ -61,7 +61,7 @@ export default function MarketingFooter() {
           </div>
         </div>
 
-        <div className="border-t border-secondary pt-8 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="border-t border-secondary pt-8 flex flex-col-reverse md:flex-row items-center justify-between text-sm text-muted-foreground gap-4 md:gap-0">
           <div>© 2026 Super Career. All rights reserved.</div>
           <div className="flex gap-6 text-muted-foreground">
             <a href="#" className="hover:text-foreground">Privacy</a>

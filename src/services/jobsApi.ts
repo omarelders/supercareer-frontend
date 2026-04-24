@@ -48,8 +48,7 @@ export interface CustomCV {
   date: string
   title: string
   appliedTo: string
-  status: 'Completed' | 'Draft'
-  format: string
+  base_cv: boolean
 }
 
 
@@ -57,14 +56,29 @@ export interface CustomCV {
 
 const MOCK_CUSTOM_CVS: CustomCV[] = [
   ...Array.from({ length: 4 }).flatMap((_, i) => [
-    { id: i * 6 + 1, date: 'Oct 24, 2023', title: 'Senior Frontend Developer CV', appliedTo: 'TechCorp International', status: 'Completed', format: 'PDF' } as CustomCV,
-    { id: i * 6 + 2, date: 'Oct 20, 2023', title: 'UX Designer - FinTech Specialist', appliedTo: 'NeoBank Systems', status: 'Completed', format: 'PDF' } as CustomCV,
-    { id: i * 6 + 3, date: 'Oct 15, 2023', title: 'Full Stack Engineer (Node.js)', appliedTo: 'WebFlow Studios', status: 'Completed', format: 'PDF' } as CustomCV,
-    { id: i * 6 + 4, date: 'Oct 10, 2023', title: 'Product Manager Role - Tech Startup', appliedTo: 'Launchpad AI', status: 'Draft', format: '-' } as CustomCV,
-    { id: i * 6 + 5, date: 'Oct 05, 2023', title: 'Frontend Engineer - Creative Focus', appliedTo: 'Designly Agency', status: 'Completed', format: 'PDF' } as CustomCV,
-    { id: i * 6 + 6, date: 'Oct 01, 2023', title: 'React Native Developer', appliedTo: 'MobileFirst', status: 'Completed', format: 'PDF' } as CustomCV,
+    { id: i * 6 + 1, date: 'Oct 24, 2023', title: 'Senior Frontend Developer CV', appliedTo: 'TechCorp International', base_cv: i === 0 } as CustomCV,
+    { id: i * 6 + 2, date: 'Oct 20, 2023', title: 'UX Designer - FinTech Specialist', appliedTo: 'NeoBank Systems', base_cv: false } as CustomCV,
+    { id: i * 6 + 3, date: 'Oct 15, 2023', title: 'Full Stack Engineer (Node.js)', appliedTo: 'WebFlow Studios', base_cv: false } as CustomCV,
+    { id: i * 6 + 4, date: 'Oct 10, 2023', title: 'Product Manager Role - Tech Startup', appliedTo: 'Launchpad AI', base_cv: false } as CustomCV,
+    { id: i * 6 + 5, date: 'Oct 05, 2023', title: 'Frontend Engineer - Creative Focus', appliedTo: 'Designly Agency', base_cv: false } as CustomCV,
+    { id: i * 6 + 6, date: 'Oct 01, 2023', title: 'React Native Developer', appliedTo: 'MobileFirst', base_cv: false } as CustomCV,
   ])
 ]
+
+const CUSTOM_CVS_STORAGE_KEY = 'supercareer_custom_cvs'
+
+function getStoredCVs(): CustomCV[] {
+  const stored = localStorage.getItem(CUSTOM_CVS_STORAGE_KEY)
+  if (!stored) {
+    localStorage.setItem(CUSTOM_CVS_STORAGE_KEY, JSON.stringify(MOCK_CUSTOM_CVS))
+    return MOCK_CUSTOM_CVS
+  }
+  return JSON.parse(stored)
+}
+
+function saveStoredCVs(cvs: CustomCV[]) {
+  localStorage.setItem(CUSTOM_CVS_STORAGE_KEY, JSON.stringify(cvs))
+}
 
 // Icon heuristic: pick an icon based on the job's source platform or title keywords
 const PLATFORM_ICON_MAP: Record<string, JobIconName> = {
@@ -170,5 +184,21 @@ export async function getJobMatches(
 
 export async function getCustomCVs(): Promise<CustomCV[]> {
   await delay(800)
-  return MOCK_CUSTOM_CVS
+  return getStoredCVs()
+}
+
+export async function deleteCustomCV(id: number): Promise<void> {
+  await delay(500)
+  const cvs = getStoredCVs()
+  saveStoredCVs(cvs.filter((cv) => cv.id !== id))
+}
+
+export async function updateCustomCVBase(id: number): Promise<CustomCV[]> {
+  await delay(500)
+  const cvs = getStoredCVs().map((cv) => ({
+    ...cv,
+    base_cv: cv.id === id,
+  }))
+  saveStoredCVs(cvs)
+  return cvs
 }

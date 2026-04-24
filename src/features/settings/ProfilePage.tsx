@@ -75,16 +75,16 @@ interface StatCardData {
 
 function StatsCards({ cards }: { cards: StatCardData[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <div
           key={card.label}
-          className="bg-white rounded-2xl border border-slate-200 p-6 shadow-dashboard-card flex flex-col gap-2 hover:shadow-md transition-shadow"
+          className="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-dashboard-card flex flex-col gap-1 md:gap-2 hover:shadow-md transition-shadow"
         >
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          <h3 className="text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wide truncate">
             {card.label}
           </h3>
-          <span className={`text-4xl font-bold leading-none ${card.accent ?? 'text-slate-900'}`}>
+          <span className={`text-2xl md:text-4xl font-bold leading-none ${card.accent ?? 'text-slate-900'}`}>
             {card.value}
           </span>
         </div>
@@ -225,28 +225,28 @@ export default function ProfilePage() {
     .join('')
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-10">
+    <div className="max-w-5xl mx-auto space-y-8 md:space-y-10 px-4 md:px-0 pb-10 mt-6 md:mt-0">
 
       {/* ── Profile Hero ── */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-7 shadow-dashboard-card flex items-center gap-6">
+      <section className="bg-white rounded-2xl border border-slate-200 p-5 md:p-7 shadow-dashboard-card flex flex-col md:flex-row items-center md:items-center gap-4 md:gap-6 text-center md:text-left">
         {isLoading ? (
           <>
             <div className="w-16 h-16 rounded-full bg-slate-200 animate-pulse shrink-0" />
-            <div className="flex flex-col gap-2 flex-1">
+            <div className="flex flex-col gap-2 flex-1 items-center md:items-start">
               <SkeletonLine w="w-40" h="h-5" />
               <SkeletonLine w="w-64" h="h-3" />
             </div>
           </>
         ) : (
           <>
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold shrink-0 select-none">
+            <div className="w-20 h-20 md:w-16 md:h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl md:text-xl font-bold shrink-0 select-none">
               {initials || <User size={28} />}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                 {displayName}
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">
+              <p className="text-slate-500 text-sm mt-1 md:mt-0.5 max-w-sm md:max-w-none mx-auto md:mx-0">
                 Manage platform settings, monitor user activity, and review your personal statistics.
               </p>
             </div>
@@ -296,12 +296,11 @@ export default function ProfilePage() {
           </p>
         )}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="grid grid-cols-[1.5fr_2fr_1fr_130px] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
-            {['USER', 'EMAIL', 'ROLE', 'ACTIONS'].map((col) => (
-              <span key={col} className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                {col}
-              </span>
-            ))}
+          <div className="hidden md:grid grid-cols-[1.5fr_2fr_1fr_130px] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 font-bold tracking-widest text-slate-400 uppercase text-xs">
+            <span>USER</span>
+            <span>EMAIL</span>
+            <span>ROLE</span>
+            <span>ACTIONS</span>
           </div>
 
           {isLoading ? (
@@ -314,25 +313,33 @@ export default function ProfilePage() {
               return (
                 <div
                   key={user.id}
-                  className={`grid grid-cols-[1.5fr_2fr_1fr_130px] gap-4 items-center px-7 py-4 ${
+                  className={`flex flex-col md:grid md:grid-cols-[1.5fr_2fr_1fr_130px] gap-3 md:gap-4 md:items-center px-5 md:px-7 py-5 md:py-4 ${
                     index < adminUsers.length - 1 ? 'border-b border-slate-100' : ''
                   } hover:bg-slate-50/70 transition-colors`}
                 >
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">{user.username}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {[user.first_name, user.last_name].filter(Boolean).join(' ') || '—'}
-                    </p>
+                  <div className="flex justify-between items-start md:block">
+                    <div>
+                      <p className="text-sm font-bold md:font-medium text-slate-800">{user.username}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {[user.first_name, user.last_name].filter(Boolean).join(' ') || '—'}
+                      </p>
+                    </div>
+                    <div className="md:hidden">
+                      <RoleBadge role={user.role} isBlocked={isBlocked} />
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-500 truncate">{user.email}</p>
-                  <div>
+                  
+                  <p className="text-xs md:text-sm text-slate-500 truncate">{user.email}</p>
+                  
+                  <div className="hidden md:block">
                     <RoleBadge role={user.role} isBlocked={isBlocked} />
                   </div>
-                  <div>
+                  
+                  <div className="pt-1 md:pt-0">
                     <button
                       id={`toggle-block-user-${user.id}`}
                       onClick={() => handleToggleBlock(user.id)}
-                      className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-3 py-1.5 rounded-lg border ${
+                      className={`flex items-center justify-center gap-1.5 text-xs font-medium transition-colors px-3 py-2 md:py-1.5 rounded-lg border w-full md:w-auto ${
                         isBlocked
                           ? 'text-emerald-700 border-emerald-200 hover:bg-emerald-50 bg-emerald-50/50'
                           : 'text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
@@ -357,12 +364,11 @@ export default function ProfilePage() {
       <section>
         <SectionHeader icon={Activity} title="Recent Administrative Activity" />
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="grid grid-cols-[1.5fr_1.5fr_2fr_1fr] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
-            {['ADMIN', 'ACTION', 'TARGET USER', 'DATE'].map((col) => (
-              <span key={col} className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                {col}
-              </span>
-            ))}
+          <div className="hidden md:grid grid-cols-[1.5fr_1.5fr_2fr_1fr] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 font-bold tracking-widest text-slate-400 uppercase text-xs">
+            <span>ADMIN</span>
+            <span>ACTION</span>
+            <span>TARGET USER</span>
+            <span>DATE</span>
           </div>
 
           {isLoading ? (
@@ -373,14 +379,19 @@ export default function ProfilePage() {
             adminActivities.map((act, index) => (
               <div
                 key={act.id}
-                className={`grid grid-cols-[1.5fr_1.5fr_2fr_1fr] gap-4 items-center px-7 py-4 ${
+                className={`flex flex-col md:grid md:grid-cols-[1.5fr_1.5fr_2fr_1fr] gap-2 md:gap-4 md:items-center px-5 md:px-7 py-5 md:py-4 ${
                   index < adminActivities.length - 1 ? 'border-b border-slate-100' : ''
                 } hover:bg-slate-50/70 transition-colors`}
               >
-                <p className="text-sm font-medium text-slate-800">{act.admin_name}</p>
-                <p className="text-sm text-slate-600">{act.action}</p>
-                <p className="text-sm text-slate-500">{act.target_user_name || '—'}</p>
-                <p className="text-sm text-slate-400">
+                <div className="flex justify-between items-center md:block">
+                  <p className="text-sm font-bold md:font-medium text-slate-800">{act.admin_name}</p>
+                  <span className="md:hidden text-[10px] text-slate-400 font-medium">
+                    {new Date(act.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-xs md:text-sm text-slate-600 font-medium md:font-normal">{act.action}</p>
+                <p className="text-xs md:text-sm text-slate-500">Target: <span className="text-slate-700">{act.target_user_name || '—'}</span></p>
+                <p className="hidden md:block text-sm text-slate-400">
                   {new Date(act.created_at).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -397,12 +408,11 @@ export default function ProfilePage() {
       <section>
         <SectionHeader icon={Database} title="Scraping Logs" />
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="grid grid-cols-[1fr_1fr_2fr_1fr] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
-            {['SOURCE', 'STATUS', 'DETAILS', 'DATE'].map((col) => (
-              <span key={col} className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                {col}
-              </span>
-            ))}
+          <div className="hidden md:grid grid-cols-[1fr_1fr_2fr_1fr] gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 font-bold tracking-widest text-slate-400 uppercase text-xs">
+            <span>SOURCE</span>
+            <span>STATUS</span>
+            <span>DETAILS</span>
+            <span>DATE</span>
           </div>
 
           {isLoading ? (
@@ -413,18 +423,24 @@ export default function ProfilePage() {
             adminScrapingLogs.map((log, index) => (
               <div
                 key={log.id}
-                className={`grid grid-cols-[1fr_1fr_2fr_1fr] gap-4 items-center px-7 py-4 ${
+                className={`flex flex-col md:grid md:grid-cols-[1fr_1fr_2fr_1fr] gap-2 md:gap-4 md:items-center px-5 md:px-7 py-5 md:py-4 ${
                   index < adminScrapingLogs.length - 1 ? 'border-b border-slate-100' : ''
                 } hover:bg-slate-50/70 transition-colors`}
               >
-                <p className="text-sm font-medium text-slate-800">{log.source_name}</p>
-                <div>
+                <div className="flex justify-between items-center md:block">
+                  <p className="text-sm font-bold md:font-medium text-slate-800">{log.source_name}</p>
+                  <div className="md:hidden flex items-center gap-2">
+                     <span className="text-[10px] text-slate-400">{new Date(log.created_at).toLocaleDateString()}</span>
+                     <ScrapingStatusBadge status={log.status} />
+                  </div>
+                </div>
+                <div className="hidden md:block">
                   <ScrapingStatusBadge status={log.status} />
                 </div>
-                <p className="text-sm text-slate-600 truncate" title={log.details}>
-                  {log.details || '—'}
+                <p className="text-xs md:text-sm text-slate-600 truncate italic" title={log.details}>
+                  {log.details || 'No details available'}
                 </p>
-                <p className="text-sm text-slate-400">
+                <p className="hidden md:block text-sm text-slate-400">
                   {new Date(log.created_at).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',

@@ -69,8 +69,8 @@ export default function LoginPage() {
         </div>
       </AnimatedContent>
 
-      <AnimatedContent distance={26} duration={0.6} delay={0.1} ease="power3.out" className="w-full">
-        <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-10">
+      <AnimatedContent distance={26} duration={0.6} delay={0.1} ease="power3.out" className="w-full px-4 md:px-0">
+        <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-6 md:p-10">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             
             <div>

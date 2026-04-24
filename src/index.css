@@ -127,8 +127,11 @@
 @utility grid-cols-cv-table {
   grid-template-columns: 180px 1fr 140px 120px 100px;
 }
+@utility grid-cols-cv-table-new {
+  grid-template-columns: 160px 1fr 160px 100px;
+}
 @utility grid-cols-proposal-table {
-  grid-template-columns: 1.5fr 3fr 1.5fr 2.5fr auto;
+  grid-template-columns: 1.5fr 4.5fr 2.5fr auto;
 }
 @utility grid-cols-dashboard-table {
   grid-template-columns: 2.5fr 1.5fr 1fr 1fr auto;

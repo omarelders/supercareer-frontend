@@ -11,8 +11,13 @@ import VerifyEmailPage from '@/features/auth/VerifyEmailPage'
 import CVBuilderPage from '@/features/cv-builder/CVBuilderPage'
 import DashboardPage from '@/features/dashboard/DashboardPage'
 import ProjectMatchPage from '@/features/freelance/ProjectMatchPage'
+import ProjectDetailPage from '@/features/freelance/ProjectDetailPage'
+import CreateProposalPage from '@/features/freelance/CreateProposalPage'
 import ProposalPage from '@/features/freelance/ProposalPage'
 import CustomCVPage from '@/features/jobs/CustomCVPage'
+import CvEditPage from '@/features/jobs/CvEditPage'
+import CvAiEditPage from '@/features/jobs/CvAiEditPage'
+import JobDetailPage from '@/features/jobs/JobDetailPage'
 import JobMatchPage from '@/features/jobs/JobMatchPage'
 import MarketingPage from '@/features/marketing/MarketingPage'
 import NotificationsPage from '@/features/notifications/NotificationsPage'
@@ -45,8 +50,13 @@ function App() {
               <Route element={<DashboardLayout />}>
                 <Route path={ROUTES.dashboard} element={<DashboardPage />} />
                 <Route path={ROUTES.jobs.jobMatch} element={<JobMatchPage />} />
+                <Route path={ROUTES.jobs.jobDetail} element={<JobDetailPage />} />
                 <Route path={ROUTES.jobs.customCv} element={<CustomCVPage />} />
+                <Route path={ROUTES.jobs.cvEdit} element={<CvEditPage />} />
+                <Route path={ROUTES.jobs.cvAiEdit} element={<CvAiEditPage />} />
                 <Route path={ROUTES.freelance.projectMatch} element={<ProjectMatchPage />} />
+                <Route path={ROUTES.freelance.projectDetail} element={<ProjectDetailPage />} />
+                <Route path={ROUTES.freelance.createProposal} element={<CreateProposalPage />} />
                 <Route path={ROUTES.freelance.proposal} element={<ProposalPage />} />
                 <Route path={ROUTES.cvBuilder} element={<CVBuilderPage />} />
                 <Route path={ROUTES.notifications} element={<NotificationsPage />} />

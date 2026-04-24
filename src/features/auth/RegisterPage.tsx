@@ -243,9 +243,9 @@ export default function RegisterPage() {
   // ── Success screen ────────────────────────────────────────────────────────
   if (success) {
     return (
-      <div className="w-full max-w-120 mx-auto">
+      <div className="w-full max-w-120 mx-auto px-4 md:px-0">
         <AnimatedContent distance={24} duration={0.6} ease="power3.out" className="w-full">
-          <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-12 flex flex-col items-center text-center gap-5">
+          <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-8 md:p-12 flex flex-col items-center text-center gap-5">
             {/* Animated checkmark circle */}
             <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
               <svg className="w-10 h-10 text-emerald-500" viewBox="0 0 24 24" fill="none">
@@ -289,8 +289,8 @@ export default function RegisterPage() {
         </div>
       </AnimatedContent>
 
-      <AnimatedContent distance={26} duration={0.6} delay={0.1} ease="power3.out" className="w-full">
-        <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-10">
+      <AnimatedContent distance={26} duration={0.6} delay={0.1} ease="power3.out" className="w-full px-4 md:px-0">
+        <div className="bg-white rounded-[calc(var(--radius)+4px)] shadow-sm border border-slate-200 p-6 md:p-10">
 
           {/* Step indicator */}
           <StepIndicator current={step} />

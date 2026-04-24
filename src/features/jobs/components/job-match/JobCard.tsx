@@ -10,6 +10,7 @@ import {
   Terminal,
   type LucideIcon,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { JobIconName, JobMatch } from '@/services/jobsApi'
 import type { JobViewMode } from '@/store/slices/jobsSlice'
 
@@ -65,9 +66,12 @@ export default function JobCard({ job, viewMode }: JobCardProps) {
           </div>
         </div>
 
-        <button className="flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors md:w-44 shrink-0">
+        <Link
+          to={`/jobs/${job.id}`}
+          className="flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors md:w-44 shrink-0"
+        >
           View Job <ArrowRight size={16} />
-        </button>
+        </Link>
       </div>
     )
   }
@@ -103,9 +107,12 @@ export default function JobCard({ job, viewMode }: JobCardProps) {
         ))}
       </div>
 
-      <button className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors mt-auto">
+      <Link
+        to={`/jobs/${job.id}`}
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors mt-auto"
+      >
         View Job <ArrowRight size={16} />
-      </button>
+      </Link>
     </div>
   )
 }

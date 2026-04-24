@@ -21,7 +21,7 @@ interface StatCardData {
 
 function StatsCards({ cards }: { cards: StatCardData[] }) {
   return (
-    <div className="grid grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {cards.map((card) => (
         <div
           key={card.label}
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="grid grid-cols-dashboard-table gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
+          <div className="hidden md:grid grid-cols-dashboard-table gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
             {['PROJECT', 'CLIENT', 'STATUS', 'DATE SENT', ''].map((col) => (
               <span key={col} className="text-xs font-bold tracking-widest text-slate-400 uppercase">
                 {col}
@@ -157,30 +157,35 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, index) => <ProjectRowSkeleton key={index} />)
-            : projectMatches.map((project, index) => (
-                <div
-                  key={project.id}
-                  className={`grid grid-cols-dashboard-table gap-4 items-center px-7 py-5 ${
-                    index < projectMatches.length - 1 ? 'border-b border-slate-100' : ''
-                  } hover:bg-slate-50 transition-colors`}
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">{project.title}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{project.subtitle}</p>
-                  </div>
+          <div className="divide-y divide-slate-100">
+            {isLoading
+              ? Array.from({ length: 3 }).map((_, index) => <ProjectRowSkeleton key={index} />)
+              : projectMatches.map((project) => (
+                  <div
+                    key={project.id}
+                    className="flex flex-col md:grid md:grid-cols-dashboard-table gap-3 md:gap-4 md:items-center p-5 md:px-7 hover:bg-slate-50 transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-bold md:font-medium text-slate-800">{project.title}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{project.subtitle}</p>
+                    </div>
 
-                  <p className="text-sm text-slate-600">{project.client}</p>
-                  <div>
-                    <StatusBadge status={project.status} />
+                    <div className="flex md:contents items-center justify-between mt-2 md:mt-0">
+                      <p className="text-sm text-slate-600">{project.client}</p>
+                      <div className="flex xl:contents items-center gap-2">
+                         <StatusBadge status={project.status} />
+                         <span className="md:hidden text-xs text-slate-400">{project.date}</span>
+                      </div>
+                    </div>
+                    
+                    <p className="hidden md:block text-sm text-slate-500">{project.date}</p>
+                    
+                    <button aria-label="Project actions" className="hidden md:block text-slate-400 hover:text-slate-600 transition-colors p-1 rounded">
+                      <MoreVertical size={16} />
+                    </button>
                   </div>
-                  <p className="text-sm text-slate-500">{project.date}</p>
-                  <button aria-label="Project actions" className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded">
-                    <MoreVertical size={16} />
-                  </button>
-                </div>
-              ))}
+                ))}
+          </div>
         </div>
       </section>
     </div>

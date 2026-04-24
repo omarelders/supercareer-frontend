@@ -2,13 +2,13 @@ import { RefreshCcw, Target } from 'lucide-react'
 
 export default function ResonanceSection() {
   return (
-    <section className="bg-white py-32 px-8">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-24">
+    <section className="bg-white py-20 lg:py-32 px-6 md:px-8 overflow-hidden">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-24">
         <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="text-xs font-bold text-blue-600 tracking-widest uppercase">
             Algorithmic Optimization
           </div>
-          <h2 className="text-5xl font-extrabold text-foreground leading-none tracking-tighter">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight md:leading-none tracking-tighter">
             Deep Resonance<br />Match Scoring
           </h2>
           <p className="text-lg font-medium text-muted-foreground leading-7 mt-2">
@@ -38,36 +38,37 @@ export default function ResonanceSection() {
           </div>
         </div>
 
-        <div className="relative w-[528px] h-[729px] shrink-0">
-          <div className="absolute -right-[80px] -bottom-[80px] w-[320px] h-[320px] rounded-full bg-[#2563EB]/20 blur-[50px] z-0" />
-          <div className="absolute inset-0 rounded-[32px] box-border p-[40px] flex flex-col gap-[32px] bg-[#0B0F19] border border-[#1E293B] shadow-marketing-glow z-10">
-            <div className="w-[446px] h-[169px] rounded-[16px] p-[32px] flex flex-col gap-[24px] box-border" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(2px)' }}>
-              <div className="flex justify-between items-center w-[380px]">
-                <span className="text-xs font-bold text-white/80 tracking-widest uppercase">SYSTEM MATCH INDEX</span>
-                <span className="text-2xl font-black text-[#2563EB] leading-none pb-1">92.4</span>
+        <div className="w-full max-w-[528px] shrink-0 mx-auto lg:mx-0">
+          <div className="relative rounded-[32px] box-border p-6 sm:p-10 flex flex-col gap-6 sm:gap-8 bg-[#0B0F19] border border-[#1E293B] shadow-marketing-glow z-10 w-full min-h-[500px] lg:h-[729px]">
+            <div className="absolute -right-[20px] sm:-right-[80px] -bottom-[20px] sm:-bottom-[80px] w-[200px] sm:w-[320px] h-[200px] sm:h-[320px] rounded-full bg-[#2563EB]/20 blur-[30px] sm:blur-[50px] z-0 pointer-events-none" />
+            
+            <div className="relative z-10 w-full h-auto rounded-[16px] p-6 sm:p-8 flex flex-col gap-4 sm:gap-6 box-border" style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(2px)' }}>
+              <div className="flex justify-between items-center w-full">
+                <span className="text-[10px] sm:text-xs font-bold text-white/80 tracking-widest uppercase truncate mr-2">SYSTEM MATCH INDEX</span>
+                <span className="text-xl sm:text-2xl font-black text-[#2563EB] leading-none pb-1">92.4</span>
               </div>
-              <div className="w-[380px] h-[8px] bg-white/10 rounded-full relative">
+              <div className="w-full h-2 bg-white/10 rounded-full relative">
                 <div className="absolute left-0 top-0 bottom-0 bg-[#2563EB] shadow-marketing-index rounded-full w-[92%]" />
               </div>
-              <div className="flex justify-between w-[380px] text-xs font-bold text-white/40 tracking-widest uppercase mt-1">
+              <div className="flex justify-between w-full text-[10px] sm:text-xs font-bold text-white/40 tracking-widest uppercase mt-1">
                 <span>PROBABILITY ^ / v</span>
                 <span>CONFIDENCE: 98%</span>
               </div>
             </div>
 
-            <div className="w-[446px] h-[446px] rounded-[16px] border border-white/10 relative overflow-hidden flex flex-col items-center justify-center">
+            <div className="relative z-10 w-full flex-1 min-h-[300px] sm:min-h-[446px] rounded-[16px] border border-white/10 overflow-hidden flex flex-col items-center justify-center">
               <div className="absolute inset-0 bg-[#0B0F19] bg-gradient-to-t from-[#0B0F19] to-transparent z-10 opacity-80" />
-              <div className="z-20 text-center pb-20">
-                <div className="text-5xl font-black text-[#cbd5e1] tracking-widest leading-none mb-1 opacity-90">ATS</div>
-                <div className="text-xs font-bold text-[#475569] tracking-widest opacity-80">MATCHSCORE</div>
+              <div className="z-20 text-center pb-16 sm:pb-20">
+                <div className="text-4xl sm:text-5xl font-black text-[#cbd5e1] tracking-widest leading-none mb-1 opacity-90">ATS</div>
+                <div className="text-[10px] sm:text-xs font-bold text-[#475569] tracking-widest opacity-80">MATCHSCORE</div>
               </div>
-              <div className="w-full space-y-2 mt-auto z-20 absolute bottom-8 px-12">
-                <div className="text-xs text-slate-700 tracking-widest flex justify-between uppercase mb-1">
+              <div className="w-full space-y-2 mt-auto z-20 absolute bottom-6 sm:bottom-8 px-6 sm:px-12">
+                <div className="text-[9px] sm:text-xs text-slate-700 tracking-widest flex justify-between uppercase mb-1">
                   <span>ATS</span><span>MATCH</span><span>SCORE</span><span>ANALYSIS</span>
                 </div>
-                <div className="w-full h-10 border-b border-[#334155]/30 relative flex items-end justify-between px-2">
+                <div className="w-full h-8 sm:h-10 border-b border-[#334155]/30 relative flex items-end justify-between px-1 sm:px-2">
                   {[3, 6, 4, 8, 5, 2].map((height, index) => (
-                    <div key={index} className="w-8 bg-[#1e293b] opacity-50 rounded-t-sm" style={{ height: `${height * 10}%` }} />
+                    <div key={index} className="w-4 sm:w-8 bg-[#1e293b] opacity-50 rounded-t-sm" style={{ height: `${height * 10}%` }} />
                   ))}
                 </div>
               </div>

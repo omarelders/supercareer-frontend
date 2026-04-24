@@ -23,10 +23,10 @@ const FEATURES = [
 
 export default function FeaturesSection() {
   return (
-    <section className="bg-muted py-32">
-      <div className="max-w-7xl mx-auto px-8 flex flex-col items-center gap-20">
+    <section className="bg-muted py-20 md:py-32">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col items-center gap-12 md:gap-20">
         <div className="flex flex-col items-center gap-4 max-w-4xl text-center">
-          <h2 className="text-5xl font-bold text-foreground leading-none">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground leading-tight md:leading-none">
             Precision-Engineered Career Growth
           </h2>
           <p className="text-lg text-muted-foreground leading-7 max-w-2xl">
@@ -37,7 +37,7 @@ export default function FeaturesSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full">
           {FEATURES.map((feature) => (
-            <div key={feature.title} className="bg-background rounded-3xl p-8 shadow-marketing-card h-96 flex flex-col relative">
+            <div key={feature.title} className="bg-background rounded-3xl p-8 shadow-marketing-card h-auto min-h-80 md:h-96 flex flex-col relative">
               <div className="w-14 h-14 rounded-2xl bg-[rgba(36,172,235,0.1)] flex items-center justify-center mb-6">
                 <feature.icon size={28} className="text-sky-400" strokeWidth={2.3} />
               </div>

@@ -9,10 +9,15 @@ export const ROUTES = {
   dashboard: '/dashboard',
   jobs: {
     jobMatch: '/jobs/job-match',
+    jobDetail: '/jobs/:id',
     customCv: '/jobs/custom-cv',
+    cvEdit: '/jobs/cv/:id/edit',
+    cvAiEdit: '/jobs/cv/:id/ai-edit',
   },
   freelance: {
     projectMatch: '/freelance/project-match',
+    projectDetail: '/freelance/projects/:id',
+    createProposal: '/freelance/create-proposal',
     proposal: '/freelance/proposal',
   },
   cvBuilder: '/cv-builder',
