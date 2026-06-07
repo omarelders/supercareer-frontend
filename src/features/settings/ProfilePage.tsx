@@ -200,7 +200,7 @@ function ProfileTab() {
     }
   }, [])
 
-  const displayName = form.full_name || [form.first_name, form.last_name].filter(Boolean).join(' ') || profile?.username || 'Your Name'
+  const displayName = form.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.username || 'Your Name'
   const avatarInitials = initialsFrom(displayName, form.email)
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
