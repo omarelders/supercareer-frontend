@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   ChevronDown,
   ChevronRight,
-  MoreHorizontal,
+  LogOut,
 } from 'lucide-react'
 import Logo from '../components/Logo'
 import {
@@ -92,7 +92,7 @@ function getInitials(name: string): string {
 }
 
 export default function Sidebar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const displayName =
     (user?.full_name as string | undefined) ??
@@ -135,8 +135,13 @@ export default function Sidebar() {
             <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
             <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
           </div>
-          <button aria-label="User profile options" className="text-slate-400 hover:text-slate-600 transition-colors">
-            <MoreHorizontal size={16} />
+          <button
+            aria-label="Log out"
+            onClick={() => void logout()}
+            title="Log out"
+            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+          >
+            <LogOut size={15} />
           </button>
         </div>
       </div>

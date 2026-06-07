@@ -10,13 +10,14 @@ import {
 } from 'lucide-react'
 import { fetchProjects, createProposal, type ApiProject } from '@/services/opportunitiesApi'
 import { mapApiProjectToProjectMatch } from '@/services/freelanceApi'
+import { useAuth } from '@/context/AuthContext'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** Generate a realistic-looking AI proposal from the project data */
-function buildProposalText(project: ApiProject): string {
+function buildProposalText(project: ApiProject, senderName: string): string {
   const skills = project.required_skills.slice(0, 5).join(', ') || 'relevant technologies'
   return `Dear Hiring Team at ${project.platform_name || 'your company'},
 
@@ -39,7 +40,7 @@ My track record includes similar engagements where I've delivered measurable imp
 I'm available to start promptly and am happy to jump on a call to discuss further.
 
 Best regards,
-Alex Morgan`
+${senderName}`
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,13 @@ function useTypingEffect(text: string, speed = 12, enabled = false) {
 // ---------------------------------------------------------------------------
 
 export default function CreateProposalPage() {
+  const { user } = useAuth()
+  const displayName =
+    (user?.full_name as string | undefined) ??
+    (user?.username as string | undefined) ??
+    (user?.email as string | undefined) ??
+    'Alex Morgan'
+
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const projectId = searchParams.get('projectId')
@@ -146,7 +154,8 @@ export default function CreateProposalPage() {
           posted_date: '',
           scraped_at: '',
           match_score: 0,
-        }
+        },
+        displayName
       )
       setProposalText(text)
       setGenerating(false)

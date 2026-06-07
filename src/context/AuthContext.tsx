@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -9,6 +10,8 @@ import {
 } from 'react'
 import api, { setForceLogoutHandler } from '@/services/api'
 import { googleLogin as apiGoogleLogin, googleRegister as apiGoogleRegister } from '@/services/googleAuthApi'
+import { store } from '@/store/store'
+import { login as reduxLogin, logout as reduxLogout } from '@/store/slices/authSlice'
 
 export interface AuthUser {
   id?: number | string
@@ -109,7 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setForceLogoutHandler(() => {
+      localStorage.removeItem('access')
+      localStorage.removeItem('refresh')
+      localStorage.removeItem('user')
       delete api.defaults.headers.common['Authorization']
+      store.dispatch(reduxLogout())
       setUser(null)
       setIsAuthenticated(false)
     })
@@ -127,7 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       //    the token — this is the key fix for the race condition.
       api.defaults.headers.common['Authorization'] = `Bearer ${access}`
 
-      // 3. THEN update React state (batched by React 18)
+      // 3. Sync Redux store immediately (outside React render cycle)
+      //    so that selectors like selectUser return the correct user at once.
+      store.dispatch(reduxLogin(userData as Record<string, unknown>))
+
+      // 4. THEN update React state (batched by React 18)
       setUser(userData)
       setIsAuthenticated(true)
     },
@@ -197,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('refresh')
       localStorage.removeItem('user')
       delete api.defaults.headers.common['Authorization']
+      // Sync Redux store so any Redux auth selectors reset immediately
+      store.dispatch(reduxLogout())
       setUser(null)
       setIsAuthenticated(false)
     }

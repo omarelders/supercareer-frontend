@@ -4,7 +4,7 @@ import { ROUTES } from '@/config/routes'
 
 const NAV_ITEMS = [
   { label: 'Home', icon: Home, href: '/' },
-  { label: 'JOPS', icon: Briefcase, href: ROUTES.jobs.jobMatch },
+  { label: 'Jobs', icon: Briefcase, href: ROUTES.jobs.jobMatch },
   { label: 'Projects', icon: ClipboardList, href: ROUTES.freelance.projectMatch },
   { label: 'CV', icon: FileText, href: ROUTES.jobs.customCv },
   { label: 'Settings', icon: Settings, href: ROUTES.settings.profile },

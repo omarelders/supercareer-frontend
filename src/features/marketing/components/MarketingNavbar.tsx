@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
 import Logo from '@/components/Logo'
 import { ROUTES } from '@/config/routes'
+import { useAuth } from '@/context/AuthContext'
 
 export default function MarketingNavbar() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <header className="sticky top-0 z-50 bg-muted h-20 flex items-center">
       <div className="max-w-7xl mx-auto w-full px-8 flex items-center justify-between">
@@ -17,10 +20,10 @@ export default function MarketingNavbar() {
         </nav>
 
         <Link
-          to={ROUTES.login}
+          to={isAuthenticated ? ROUTES.dashboard : ROUTES.login}
           className="bg-primary text-white text-base font-bold px-7 py-4 rounded-full hover:bg-blue-700 transition-colors h-12 flex items-center justify-center tracking-wide font-heading min-w-28"
         >
-          Login
+          {isAuthenticated ? 'Dashboard' : 'Login'}
         </Link>
       </div>
     </header>
