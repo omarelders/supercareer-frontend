@@ -168,12 +168,20 @@ export default function CreateProposalPage() {
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const textToCopy = typingDone ? proposalText : displayed
+      await navigator.clipboard.writeText(textToCopy)
+      
       await createProposal({
         project: project?.id ?? null,
         content: proposalText,
         status: 'sent',
       })
       setSubmitted(true)
+      
+      if (project?.source_url) {
+        window.open(project.source_url, '_blank')
+      }
+      navigate('/freelance/project-match')
     } catch {
       setSubmitError('Failed to send proposal. Please try again.')
     } finally {

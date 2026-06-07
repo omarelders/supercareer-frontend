@@ -157,9 +157,6 @@ export default function ProjectMatchPage() {
           <button className="text-blue-600 font-bold pb-4 border-b-2 border-blue-600 text-sm whitespace-nowrap">
             Project matches
           </button>
-          <button className="text-slate-500 font-bold pb-4 border-b-2 border-transparent hover:text-slate-700 transition-colors text-sm whitespace-nowrap">
-            History
-          </button>
         </div>
 
         <div className="hidden sm:flex items-center gap-3 pb-4 sm:pb-3 px-2 sm:px-0">

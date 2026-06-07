@@ -19,6 +19,7 @@ export interface AuthUser {
   username?: string
   full_name?: string
   role?: string
+  avatar?: string
   [key: string]: unknown
 }
 
@@ -33,6 +34,7 @@ interface AuthContextValue {
     role?: string
     register?: boolean
   }) => Promise<void>
+  updateUser: (updates: Partial<AuthUser>) => void
 }
 
 // Typing based on the exact shape returned by the backend
@@ -215,6 +217,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null
+      const updatedUser = { ...prev, ...updates }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      // Sync Redux
+      store.dispatch(reduxLogin(updatedUser as Record<string, unknown>))
+      return updatedUser
+    })
+  }, [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -223,8 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       googleAuth,
+      updateUser,
     }),
-    [user, loading, isAuthenticated, login, logout, googleAuth],
+    [user, loading, isAuthenticated, login, logout, googleAuth, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

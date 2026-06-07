@@ -38,8 +38,11 @@ export default function JobMatchCard({ job }: JobMatchCardProps) {
         ))}
       </div>
 
-      <button className="w-full bg-blue-600 text-white text-sm font-semibold py-3 rounded-full hover:bg-blue-700 active:scale-95 transition-all mt-auto">
-        View Match &amp; Apply
+      <button
+        onClick={() => job.sourceUrl && window.open(job.sourceUrl, '_blank')}
+        className="w-full bg-blue-600 text-white text-sm font-semibold py-3 rounded-full hover:bg-blue-700 active:scale-95 transition-all mt-auto"
+      >
+        Match &amp; Apply
       </button>
     </div>
   )

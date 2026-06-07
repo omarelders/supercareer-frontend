@@ -12,6 +12,7 @@ export interface DashboardJobMatch {
   matchPct: number
   logo: string
   logoColor: string
+  sourceUrl: string
 }
 
 export interface DashboardProjectMatch {
@@ -61,6 +62,7 @@ export async function getDashboardJobMatches(): Promise<DashboardJobMatch[]> {
       matchPct: Math.round(job.match_score),
       logo: logoInitials(job.company),
       logoColor: logoColor(job.id),
+      sourceUrl: job.source_url,
     }))
   } catch {
     return []

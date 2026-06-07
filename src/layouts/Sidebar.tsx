@@ -127,9 +127,13 @@ export default function Sidebar() {
         <div className="flex items-center gap-2.5">
           <div
             aria-hidden="true"
-            className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0 overflow-hidden"
           >
-            <span className="text-xs font-bold text-white leading-none">{initials}</span>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs font-bold text-white leading-none">{initials}</span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
