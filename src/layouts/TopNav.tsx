@@ -1,4 +1,4 @@
-import { Bell, Search, Settings, Menu } from 'lucide-react'
+import { Search, Settings, Menu } from 'lucide-react'
 import Logo from '@/components/Logo'
 
 export default function TopNav() {
@@ -17,15 +17,6 @@ export default function TopNav() {
       </div>
 
       <div className="flex items-center gap-3">
-
-      <button
-        id="top-nav-bell"
-        aria-label="Notifications"
-        className="relative w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-      >
-        <Bell size={17} />
-        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
-      </button>
 
       <button
         id="top-nav-settings"

@@ -1,12 +1,9 @@
 import {
-  Bell,
   Briefcase,
   FileText,
   LayoutDashboard,
   Monitor,
   RefreshCw,
-  Settings,
-  ShieldCheck,
   User,
   type LucideIcon,
 } from 'lucide-react'
@@ -60,18 +57,10 @@ export const MAIN_NAV_ITEMS: NavigationItem[] = [
     href: ROUTES.cvBuilder,
     icon: FileText,
   },
-  {
-    label: 'Notifications',
-    href: ROUTES.notifications,
-    icon: Bell,
-    badge: 'dot',
-  },
 ]
 
 export const SETTINGS_NAV_ITEMS: NavigationItem[] = [
   { label: 'Profile', href: ROUTES.settings.profile, icon: User },
-  { label: 'Preferences', href: ROUTES.settings.preferences, icon: Settings },
-  { label: 'Security', href: ROUTES.settings.security, icon: ShieldCheck },
 ]
 
 export function isLeafNavigationItem(item: NavigationItem): item is LeafNavigationItem {

@@ -21,10 +21,7 @@ export const ROUTES = {
     proposal: '/freelance/proposal',
   },
   cvBuilder: '/cv-builder',
-  notifications: '/notifications',
   settings: {
     profile: '/settings/profile',
-    preferences: '/settings/preferences',
-    security: '/settings/security',
   },
 } as const

@@ -20,10 +20,7 @@ import CvAiEditPage from '@/features/jobs/CvAiEditPage'
 import JobDetailPage from '@/features/jobs/JobDetailPage'
 import JobMatchPage from '@/features/jobs/JobMatchPage'
 import MarketingPage from '@/features/marketing/MarketingPage'
-import NotificationsPage from '@/features/notifications/NotificationsPage'
-import PreferencesPage from '@/features/settings/PreferencesPage'
 import ProfilePage from '@/features/settings/ProfilePage'
-import SecurityPage from '@/features/settings/SecurityPage'
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import { store } from '@/store/store'
@@ -59,10 +56,7 @@ function App() {
                 <Route path={ROUTES.freelance.createProposal} element={<CreateProposalPage />} />
                 <Route path={ROUTES.freelance.proposal} element={<ProposalPage />} />
                 <Route path={ROUTES.cvBuilder} element={<CVBuilderPage />} />
-                <Route path={ROUTES.notifications} element={<NotificationsPage />} />
                 <Route path={ROUTES.settings.profile} element={<ProfilePage />} />
-                <Route path={ROUTES.settings.preferences} element={<PreferencesPage />} />
-                <Route path={ROUTES.settings.security} element={<SecurityPage />} />
               </Route>
             </Route>
           </Routes>

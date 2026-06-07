@@ -33,7 +33,6 @@ const registerSchema = z
     experience: z.string().optional(),
     bio: z.string().optional(),
     education: z.string().optional(),
-    preferences: z.string().optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords don't match",
@@ -157,7 +156,6 @@ export default function RegisterPage() {
       experience: '',
       bio: '',
       education: '',
-      preferences: '',
     },
   })
 
@@ -190,7 +188,7 @@ export default function RegisterPage() {
       experience: values.experience ?? '',
       bio: values.bio ?? '',
       education: values.education ?? '',
-      preferences: values.preferences ?? '',
+      preferences: '',
     }
 
     // ── Step 1: Register ────────────────────────────────────────────────
@@ -500,15 +498,6 @@ export default function RegisterPage() {
                   className="w-full px-4 py-3 border border-slate-200 rounded-[var(--radius)] text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none" />
               </div>
 
-              {/* Preferences */}
-              <div>
-                <label htmlFor="register-preferences" className="block text-sm font-bold text-slate-700 mb-2">
-                  Preferences
-                </label>
-                <textarea id="register-preferences" rows={2} placeholder="Remote work, full-time, startups…"
-                  {...register('preferences')}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-[var(--radius)] text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none" />
-              </div>
 
               {/* Server error */}
               {serverError && (
