@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, Clock, ExternalLink, MapPin, User, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { ProjectMatch } from '@/services/freelanceApi'
@@ -8,8 +8,104 @@ import {
   selectProjectMatchesState,
 } from '@/store/slices/freelanceSlice'
 
-function ProjectCard({ project }: { project: ProjectMatch }) {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
+type SortMode = 'relevance' | 'recent'
+
+// ---------------------------------------------------------------------------
+// Sorting helpers
+// ---------------------------------------------------------------------------
+
+function sortProjects(items: ProjectMatch[], mode: SortMode): ProjectMatch[] {
+  const copy = [...items]
+  if (mode === 'relevance') {
+    return copy.sort((a, b) => b.matchPct - a.matchPct)
+  }
+  // 'recent': newest posted_date first; fall back to matchPct if dates equal
+  return copy.sort((a, b) => {
+    const dateA = a.postedDate ? new Date(a.postedDate).getTime() : 0
+    const dateB = b.postedDate ? new Date(b.postedDate).getTime() : 0
+    if (dateB !== dateA) return dateB - dateA
+    return b.matchPct - a.matchPct
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Sort Dropdown
+// ---------------------------------------------------------------------------
+
+function SortDropdown({
+  mode,
+  onChange,
+}: {
+  mode: SortMode
+  onChange: (m: SortMode) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const labels: Record<SortMode, string> = {
+    relevance: 'Relevance',
+    recent: 'Most Recent',
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-sky-100 text-blue-500 hover:text-blue-600 hover:bg-sky-200 text-xs font-bold transition-colors select-none"
+      >
+        Sort: {labels[mode]}
+        <ChevronDown
+          size={12}
+          className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden">
+          {(Object.keys(labels) as SortMode[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => {
+                onChange(key)
+                setOpen(false)
+              }}
+              className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors
+                ${mode === key
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+                }`}
+            >
+              {mode === key && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-2 mb-px" />
+              )}
+              {labels[key]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Project Card
+// ---------------------------------------------------------------------------
+
+function ProjectCard({ project }: { project: ProjectMatch }) {
   return (
     <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row gap-6 md:gap-8">
       <div className="flex-1 space-y-4">
@@ -90,6 +186,10 @@ function ProjectCard({ project }: { project: ProjectMatch }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Skeleton
+// ---------------------------------------------------------------------------
+
 function ProjectCardSkeleton() {
   return (
     <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row gap-6 md:gap-8 animate-pulse">
@@ -120,18 +220,32 @@ function ProjectCardSkeleton() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function ProjectMatchPage() {
   const dispatch = useAppDispatch()
   const { items, isLoading, error } = useAppSelector(selectProjectMatchesState)
   const [visibleCount, setVisibleCount] = useState(5)
+  const [sortMode, setSortMode] = useState<SortMode>('relevance')
+
+  // Reset visible count when sort changes so we always start from page 1
+  function handleSortChange(mode: SortMode) {
+    setSortMode(mode)
+    setVisibleCount(5)
+  }
 
   useEffect(() => {
     dispatch(fetchProjectMatches())
   }, [dispatch])
 
+  const sorted = useMemo(() => sortProjects(items, sortMode), [items, sortMode])
+  const visible = sorted.slice(0, visibleCount)
+
   return (
     <div className="max-w-250 mx-auto px-4 md:px-6 py-6 md:py-12 bg-slate-50/50 min-h-screen">
-      
+
       {/* Mobile Top Header */}
       <div className="flex md:hidden items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -161,19 +275,41 @@ export default function ProjectMatchPage() {
 
         <div className="hidden sm:flex items-center gap-3 pb-4 sm:pb-3 px-2 sm:px-0">
           <div className="px-4 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-500 bg-white shadow-sm">
-            {items.length} Matches Found
+            {sorted.length} Matches Found
           </div>
-          <button className="px-4 py-1.5 rounded-full bg-sky-100 text-blue-500 hover:text-blue-600 hover:bg-sky-200 text-xs font-bold transition-colors">
-            Sort: Relevance
-          </button>
+          <SortDropdown mode={sortMode} onChange={handleSortChange} />
         </div>
       </div>
-      
-      {/* Mobile Filters */}
+
+      {/* Mobile Filter Pills */}
       <div className="flex md:hidden gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
-        <button className="px-4 py-1.5 rounded-full bg-blue-600 text-white text-xs font-medium whitespace-nowrap shadow-sm">All Matches</button>
-        <button className="px-4 py-1.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 text-xs font-medium whitespace-nowrap shadow-sm">High Score <ChevronDown size={12} /></button>
-        <button className="px-4 py-1.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 text-xs font-medium whitespace-nowrap shadow-sm">Recent <ChevronDown size={12} /></button>
+        <button
+          onClick={() => handleSortChange('relevance')}
+          className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shadow-sm transition-colors
+            ${sortMode === 'relevance'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          All Matches
+        </button>
+        <button
+          onClick={() => handleSortChange('relevance')}
+          className={`px-4 py-1.5 rounded-full flex items-center gap-1 text-xs font-medium whitespace-nowrap shadow-sm transition-colors
+            ${sortMode === 'relevance'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          High Score <Zap size={11} className={sortMode === 'relevance' ? 'fill-white' : 'fill-slate-400'} />
+        </button>
+        <button
+          onClick={() => handleSortChange('recent')}
+          className={`px-4 py-1.5 rounded-full flex items-center gap-1 text-xs font-medium whitespace-nowrap shadow-sm transition-colors
+            ${sortMode === 'recent'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          Recent <Clock size={11} />
+        </button>
       </div>
 
       <div className="space-y-6">
@@ -181,10 +317,10 @@ export default function ProjectMatchPage() {
           ? Array.from({ length: 3 }).map((_, index) => <ProjectCardSkeleton key={index} />)
           : error
           ? <p className="text-sm text-red-500">{error}</p>
-          : items.slice(0, visibleCount).map((project) => <ProjectCard key={project.id} project={project} />)}
+          : visible.map((project) => <ProjectCard key={project.id} project={project} />)}
       </div>
 
-      {!isLoading && !error && items.length > visibleCount && (
+      {!isLoading && !error && sorted.length > visibleCount && (
         <div className="flex justify-center mt-8">
           <button
             onClick={() => setVisibleCount((prev) => prev + 5)}

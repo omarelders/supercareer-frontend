@@ -24,6 +24,8 @@ export interface ProjectMatch {
   budgetType: string
   client: string
   postedTime: string
+  /** ISO date string from the API — used for recency sorting */
+  postedDate: string
   location: string
   description: string
   tags: string[]
@@ -106,6 +108,7 @@ export function mapApiProjectToProjectMatch(project: ApiProject): ProjectMatch {
     budgetType: type,
     client: project.platform_name || 'Unknown client',
     postedTime: relativePostedTime(project.posted_date),
+    postedDate: project.posted_date,
     location: 'Remote',  // project listings often don't specify; default to Remote
     description: project.description,
     tags: project.required_skills.slice(0, 4),
