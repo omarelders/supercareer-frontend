@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ArrowRight, LayoutGrid, MoreVertical, Sparkles } from 'lucide-react'
+import { ArrowRight, LayoutGrid, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/config/routes'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
@@ -150,7 +150,7 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="hidden md:grid grid-cols-dashboard-table gap-4 px-7 py-3.5 border-b border-slate-100 bg-slate-50/60">
-            {['PROJECT', 'CLIENT', 'STATUS', 'DATE SENT', ''].map((col) => (
+            {['PROJECT', 'CLIENT', 'STATUS', 'DATE SENT'].map((col) => (
               <span key={col} className="text-xs font-bold tracking-widest text-slate-400 uppercase">
                 {col}
               </span>
@@ -182,14 +182,6 @@ export default function DashboardPage() {
                     </div>
                     
                     <p className="hidden md:block text-sm text-slate-500">{project.date}</p>
-                    
-                    <button 
-                      aria-label="Project actions" 
-                      onClick={(e) => e.stopPropagation()}
-                      className="hidden md:block text-slate-400 hover:text-slate-600 transition-colors p-1 rounded"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
                   </div>
                 ))}
           </div>

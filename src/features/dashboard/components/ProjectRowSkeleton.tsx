@@ -8,7 +8,6 @@ export default function ProjectRowSkeleton() {
       <div className="h-3.5 bg-slate-200 rounded w-2/3" />
       <div className="h-6 w-20 rounded-full bg-slate-200" />
       <div className="h-3.5 bg-slate-200 rounded w-1/2" />
-      <div className="h-4 w-4 rounded bg-slate-100" />
     </div>
   )
 }

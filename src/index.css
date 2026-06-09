@@ -134,7 +134,7 @@
   grid-template-columns: 1.5fr 4.5fr 2.5fr auto;
 }
 @utility grid-cols-dashboard-table {
-  grid-template-columns: 2.5fr 1.5fr 1fr 1fr auto;
+  grid-template-columns: 2.5fr 1.5fr 1fr 1fr;
 }
 
 @utility no-scrollbar {
