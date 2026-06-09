@@ -5,6 +5,8 @@ import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import type { CVData } from '@/features/cv-builder/types'
 import { MantineProvider } from '@mantine/core'
 import { cvUserInteraction } from '@/services/cvAiApi'
+import api from '@/services/api'
+import { useAuth } from '@/context/AuthContext'
 
 interface Message {
   id: string
@@ -30,6 +32,7 @@ const INITIAL_CV: CVData = {
 export default function CvAiEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [cvData, setCvData] = useState<CVData>(INITIAL_CV)
   const [cvLoading, setCvLoading] = useState(true)
@@ -66,6 +69,32 @@ export default function CvAiEditPage() {
       setCvLoading(true)
       setCvError(null)
       try {
+        let profileName = ''
+        let profileTitle = ''
+
+        try {
+          const { data } = await api.get('/api/profile/')
+          if (data) {
+            profileName =
+              data.full_name ||
+              [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+              data.username ||
+              ''
+            profileTitle = data.professional_title || ''
+          }
+        } catch (profileErr) {
+          console.error('Failed to load profile for CV defaults:', profileErr)
+        }
+
+        // Fallbacks from auth context
+        if (!profileName && user) {
+          profileName =
+            (user.full_name as string) ||
+            (user.username as string) ||
+            (user.email as string) ||
+            ''
+        }
+
         // Import dynamically to avoid circular deps; the slice already has the CVs in localStorage
         const { getCustomCVs } = await import('@/services/jobsApi')
         const cvs = await getCustomCVs()
@@ -75,6 +104,14 @@ export default function CvAiEditPage() {
           // CV not found in list – show a placeholder state with a notice
           // The AI interaction will still work because we send the current cvData
           if (!cancelled) {
+            setCvData((prev) => ({
+              ...prev,
+              personal: {
+                ...prev.personal,
+                fullName: profileName || prev.personal.fullName,
+                title: profileTitle || prev.personal.title,
+              },
+            }))
             setCvError(null)
             setCvLoading(false)
           }
@@ -86,6 +123,14 @@ export default function CvAiEditPage() {
         // call it here to hydrate the full CVData. For now we surface the
         // metadata we have and let the AI interaction fill in the rest.
         if (!cancelled) {
+          setCvData((prev) => ({
+            ...prev,
+            personal: {
+              ...prev.personal,
+              fullName: profileName || prev.personal.fullName,
+              title: profileTitle || prev.personal.title || found.title,
+            },
+          }))
           setCvLoading(false)
         }
       } catch (err) {
@@ -100,7 +145,7 @@ export default function CvAiEditPage() {
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, user])
 
   // ---------------------------------------------------------------------------
   // Auto-scroll on new messages
@@ -204,9 +249,9 @@ export default function CvAiEditPage() {
       )}
 
       {/* Main two-column layout */}
-      <div className="flex flex-1 gap-5 min-h-0">
-        {/* LEFT: CV Preview */}
-        <div className="flex-1 min-h-0 overflow-y-auto rounded-xl">
+      <div className="flex flex-col lg:flex-row flex-1 gap-5 min-h-0">
+        {/* LEFT: CV Preview — hidden on mobile (too small to be useful) */}
+        <div className="hidden lg:flex flex-1 min-h-0 overflow-y-auto rounded-xl">
           {cvLoading ? (
             <div className="flex items-center justify-center h-40 text-slate-400 text-sm gap-2">
               <Loader2 size={18} className="animate-spin" />
@@ -226,7 +271,7 @@ export default function CvAiEditPage() {
         </div>
 
         {/* RIGHT: Chat panel */}
-        <div className="w-[380px] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="w-full lg:w-[380px] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           {/* Chat header */}
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
             <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center">

@@ -136,3 +136,11 @@
 @utility grid-cols-dashboard-table {
   grid-template-columns: 2.5fr 1.5fr 1fr 1fr auto;
 }
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

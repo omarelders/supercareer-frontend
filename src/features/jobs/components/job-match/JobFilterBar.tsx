@@ -51,7 +51,7 @@ export default function JobFilterBar({
 }: JobFilterBarProps) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3 mb-6 shadow-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 lg:pb-0 min-w-0">
         <div className="flex items-center gap-2 pl-2 pr-1 text-slate-700">
           <ListFilter size={18} className="text-slate-400" />
           <span className="text-sm font-bold">Filters:</span>

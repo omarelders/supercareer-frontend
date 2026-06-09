@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, Clock, ExternalLink, MapPin, User, Zap } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronDown, Clock, ExternalLink, MapPin, Search, User, X, Zap } from 'lucide-react'
 import type { ProjectMatch } from '@/services/freelanceApi'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
@@ -226,9 +226,20 @@ function ProjectCardSkeleton() {
 
 export default function ProjectMatchPage() {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const { items, isLoading, error } = useAppSelector(selectProjectMatchesState)
   const [visibleCount, setVisibleCount] = useState(5)
   const [sortMode, setSortMode] = useState<SortMode>('relevance')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mobileQuery, setMobileQuery] = useState('')
+
+  // Derive the active search term from the URL ?q= param
+  const searchQuery = searchParams.get('q') ?? ''
+
+  // Sync mobile input with URL param on mount / param change
+  useEffect(() => {
+    setMobileQuery(searchQuery)
+  }, [searchQuery])
 
   // Reset visible count when sort changes so we always start from page 1
   function handleSortChange(mode: SortMode) {
@@ -236,11 +247,36 @@ export default function ProjectMatchPage() {
     setVisibleCount(5)
   }
 
+  function handleMobileSearch(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = mobileQuery.trim()
+    setSearchParams(trimmed ? { q: trimmed } : {})
+    setVisibleCount(5)
+  }
+
+  function clearSearch() {
+    setSearchParams({})
+    setMobileQuery('')
+    setVisibleCount(5)
+  }
+
   useEffect(() => {
     dispatch(fetchProjectMatches())
   }, [dispatch])
 
-  const sorted = useMemo(() => sortProjects(items, sortMode), [items, sortMode])
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return items
+    const q = searchQuery.toLowerCase()
+    return items.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.client.toLowerCase().includes(q) ||
+        p.tags.some((t) => t.toLowerCase().includes(q)),
+    )
+  }, [items, searchQuery])
+
+  const sorted = useMemo(() => sortProjects(filtered, sortMode), [filtered, sortMode])
   const visible = sorted.slice(0, visibleCount)
 
   return (
@@ -249,7 +285,11 @@ export default function ProjectMatchPage() {
       {/* Mobile Top Header */}
       <div className="flex md:hidden items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <button className="text-slate-600 p-1">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-slate-600 p-1"
+            aria-label="Go back"
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <h1 className="text-lg font-bold text-slate-900">Project Matches</h1>
@@ -261,10 +301,16 @@ export default function ProjectMatchPage() {
       </div>
 
       {/* Mobile Search */}
-      <div className="md:hidden mb-6 relative">
-        <svg className="absolute left-3 top-2.5 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" placeholder="Search matched jobs" className="w-full bg-slate-100 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all border-none" />
-      </div>
+      <form onSubmit={handleMobileSearch} className="md:hidden mb-6 relative">
+        <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+        <input
+          type="text"
+          value={mobileQuery}
+          onChange={(e) => setMobileQuery(e.target.value)}
+          placeholder="Search projects..."
+          className="w-full bg-slate-100 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all border-none"
+        />
+      </form>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6 border-b border-slate-200">
         <div className="flex items-center gap-4 md:gap-8 -mb-px px-2 overflow-x-auto no-scrollbar">
@@ -274,6 +320,16 @@ export default function ProjectMatchPage() {
         </div>
 
         <div className="hidden sm:flex items-center gap-3 pb-4 sm:pb-3 px-2 sm:px-0">
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold border border-blue-100 hover:bg-blue-100 transition-colors"
+            >
+              <Search size={11} />
+              {searchQuery}
+              <X size={11} />
+            </button>
+          )}
           <div className="px-4 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-500 bg-white shadow-sm">
             {sorted.length} Matches Found
           </div>
@@ -284,7 +340,10 @@ export default function ProjectMatchPage() {
       {/* Mobile Filter Pills */}
       <div className="flex md:hidden gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
         <button
-          onClick={() => handleSortChange('relevance')}
+          onClick={() => {
+            setSortMode('relevance')
+            setVisibleCount(5)
+          }}
           className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shadow-sm transition-colors
             ${sortMode === 'relevance'
               ? 'bg-blue-600 text-white'

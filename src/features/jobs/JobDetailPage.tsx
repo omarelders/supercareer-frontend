@@ -261,27 +261,23 @@ export default function JobDetailPage() {
         </div>
 
         {/* Info pills */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           {salaryRange && (
-            <div className="col-span-3 sm:col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+            <div className="col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
               <p className="text-xs text-slate-400 font-medium mb-0.5">Salary Range</p>
               <p className="text-sm font-bold text-slate-800">{salaryRange}</p>
             </div>
           )}
-          <div
-            className={`${salaryRange ? 'col-span-3 sm:col-span-1' : 'col-span-3 sm:col-span-1'} bg-slate-50 rounded-xl border border-slate-100 px-4 py-3`}
-          >
+          <div className="col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
             <p className="text-xs text-slate-400 font-medium mb-0.5">Job Type</p>
             <p className="text-sm font-bold text-slate-800">{job.jobType}</p>
           </div>
-          <div
-            className={`${salaryRange ? 'col-span-3 sm:col-span-1' : 'col-span-3 sm:col-span-1'} bg-slate-50 rounded-xl border border-slate-100 px-4 py-3`}
-          >
+          <div className="col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
             <p className="text-xs text-slate-400 font-medium mb-0.5">Duration</p>
             <p className="text-sm font-bold text-slate-800">{duration}</p>
           </div>
           {!salaryRange && (
-            <div className="col-span-3 sm:col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+            <div className="col-span-1 bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
               <p className="text-xs text-slate-400 font-medium mb-0.5">Location</p>
               <p className="text-sm font-bold text-slate-800">{job.location}</p>
             </div>

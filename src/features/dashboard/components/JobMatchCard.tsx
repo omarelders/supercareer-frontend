@@ -8,8 +8,8 @@ import {
   User,
 } from 'lucide-react'
 
-// Helper to determine the best icon and color scheme based on title & platform
-function getJobIcon(title: string, platform: string) {
+// Helper to determine the best icon and color scheme based on title
+function getJobIcon(title: string) {
   const t = title.toLowerCase()
 
   // 1. Creative, Design, Writing
@@ -118,7 +118,7 @@ interface JobMatchCardProps {
 }
 
 export default function JobMatchCard({ job }: JobMatchCardProps) {
-  const { Icon, bgClass, iconClass } = getJobIcon(job.title, job.platform)
+  const { Icon, bgClass, iconClass } = getJobIcon(job.title)
 
   return (
     <div className="group bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-5 hover:border-slate-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">

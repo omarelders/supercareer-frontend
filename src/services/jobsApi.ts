@@ -1,5 +1,4 @@
 import { fetchJobs, type ApiJob } from './opportunitiesApi'
-import { delay } from './request'
 
 
 
@@ -54,18 +53,23 @@ export interface CustomCV {
 
 
 
+function getRecentDate(daysAgo: number): string {
+  const d = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const MOCK_CUSTOM_CVS: CustomCV[] = [
   ...Array.from({ length: 4 }).flatMap((_, i) => [
-    { id: i * 6 + 1, date: 'Oct 24, 2023', title: 'Senior Frontend Developer CV', appliedTo: 'TechCorp International', base_cv: i === 0 } as CustomCV,
-    { id: i * 6 + 2, date: 'Oct 20, 2023', title: 'UX Designer - FinTech Specialist', appliedTo: 'NeoBank Systems', base_cv: false } as CustomCV,
-    { id: i * 6 + 3, date: 'Oct 15, 2023', title: 'Full Stack Engineer (Node.js)', appliedTo: 'WebFlow Studios', base_cv: false } as CustomCV,
-    { id: i * 6 + 4, date: 'Oct 10, 2023', title: 'Product Manager Role - Tech Startup', appliedTo: 'Launchpad AI', base_cv: false } as CustomCV,
-    { id: i * 6 + 5, date: 'Oct 05, 2023', title: 'Frontend Engineer - Creative Focus', appliedTo: 'Designly Agency', base_cv: false } as CustomCV,
-    { id: i * 6 + 6, date: 'Oct 01, 2023', title: 'React Native Developer', appliedTo: 'MobileFirst', base_cv: false } as CustomCV,
+    { id: i * 6 + 1, date: getRecentDate(i * 30 + 1), title: 'Senior Frontend Developer CV', appliedTo: 'TechCorp International', base_cv: i === 0 } as CustomCV,
+    { id: i * 6 + 2, date: getRecentDate(i * 30 + 5), title: 'UX Designer - FinTech Specialist', appliedTo: 'NeoBank Systems', base_cv: false } as CustomCV,
+    { id: i * 6 + 3, date: getRecentDate(i * 30 + 10), title: 'Full Stack Engineer (Node.js)', appliedTo: 'WebFlow Studios', base_cv: false } as CustomCV,
+    { id: i * 6 + 4, date: getRecentDate(i * 30 + 15), title: 'Product Manager Role - Tech Startup', appliedTo: 'Launchpad AI', base_cv: false } as CustomCV,
+    { id: i * 6 + 5, date: getRecentDate(i * 30 + 20), title: 'Frontend Engineer - Creative Focus', appliedTo: 'Designly Agency', base_cv: false } as CustomCV,
+    { id: i * 6 + 6, date: getRecentDate(i * 30 + 25), title: 'React Native Developer', appliedTo: 'MobileFirst', base_cv: false } as CustomCV,
   ])
 ]
 
-const CUSTOM_CVS_STORAGE_KEY = 'supercareer_custom_cvs'
+const CUSTOM_CVS_STORAGE_KEY = 'supercareer_custom_cvs_v2'
 
 function getStoredCVs(): CustomCV[] {
   const stored = localStorage.getItem(CUSTOM_CVS_STORAGE_KEY)
@@ -183,18 +187,15 @@ export async function getJobMatches(
 }
 
 export async function getCustomCVs(): Promise<CustomCV[]> {
-  await delay(800)
   return getStoredCVs()
 }
 
 export async function deleteCustomCV(id: number): Promise<void> {
-  await delay(500)
   const cvs = getStoredCVs()
   saveStoredCVs(cvs.filter((cv) => cv.id !== id))
 }
 
 export async function updateCustomCVBase(id: number): Promise<CustomCV[]> {
-  await delay(500)
   const cvs = getStoredCVs().map((cv) => ({
     ...cv,
     base_cv: cv.id === id,
@@ -204,7 +205,6 @@ export async function updateCustomCVBase(id: number): Promise<CustomCV[]> {
 }
 
 export async function renameCustomCV(id: number, newTitle: string): Promise<CustomCV[]> {
-  await delay(300)
   const cvs = getStoredCVs().map((cv) => (cv.id === id ? { ...cv, title: newTitle } : cv))
   saveStoredCVs(cvs)
   return cvs

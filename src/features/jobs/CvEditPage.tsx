@@ -68,9 +68,8 @@ export default function CvEditPage() {
     setIsSaving(true)
     try {
       // TODO: PUT /api/cv/{id}/ with cvData
-      await new Promise((r) => setTimeout(r, 1000))
       setSaved(true)
-      setTimeout(() => navigate(-1), 1200)
+      navigate(-1)
     } finally {
       setIsSaving(false)
     }
@@ -119,7 +118,7 @@ export default function CvEditPage() {
         </div>
 
         {/* Two-column layout */}
-        <div className="flex gap-8 flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row lg:gap-8 flex-1 min-h-0">
           {/* Left: Form */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             <ProgressBar

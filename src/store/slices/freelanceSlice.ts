@@ -180,6 +180,19 @@ export const selectFreelanceState = (state: RootState) => state.freelance
 export const selectProjectMatchesState = (state: RootState) => state.freelance.projects
 export const selectProposalsState = (state: RootState) => state.freelance.proposals
 
+/** The 3 most recently posted projects – used by the notification bell. */
+export const selectRecentProjects = createSelector(
+  selectProjectMatchesState,
+  (projectsState) =>
+    [...projectsState.items]
+      .sort((a, b) => {
+        const dateA = a.postedDate ? new Date(a.postedDate).getTime() : 0
+        const dateB = b.postedDate ? new Date(b.postedDate).getTime() : 0
+        return dateB - dateA
+      })
+      .slice(0, 3)
+)
+
 export const selectFilteredProposals = createSelector(selectProposalsState, (state) =>
   state.activeTab === 'All Proposals'
     ? state.items

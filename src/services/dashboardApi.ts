@@ -22,6 +22,7 @@ export interface DashboardProjectMatch {
   client: string
   status: 'In Review' | 'Interviewing' | 'Sent' | 'Accepted' | 'Rejected'
   date: string
+  sourceUrl?: string
 }
 
 export interface DashboardStats {
@@ -83,6 +84,7 @@ export async function getDashboardProjectMatches(): Promise<DashboardProjectMatc
         month: 'short',
         day: 'numeric',
       }),
+      sourceUrl: project.source_url,
     }))
   } catch {
     return []

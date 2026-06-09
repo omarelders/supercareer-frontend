@@ -29,7 +29,7 @@ function StatsCards({ cards }: { cards: StatCardData[] }) {
         >
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">{card.label}</h3>
           <div className="flex items-end justify-between">
-            <span className="text-4xl font-bold text-slate-900 leading-none">{card.value}</span>
+            <span className="text-3xl md:text-4xl font-bold text-slate-900 leading-none">{card.value}</span>
             {card.trend ? (
               <div className={`text-sm font-bold mb-1 ${card.trendClassName ?? 'text-slate-500'}`}>
                 {card.trend}
@@ -88,7 +88,7 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto space-y-10">
       <section className="flex flex-col gap-8 mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
             {isLoading ? 'Welcome back!' : `Welcome back, ${stats?.user_name || 'User'}!`}
           </h1>
           <p className="text-slate-500 text-base mt-1">
@@ -163,7 +163,10 @@ export default function DashboardPage() {
               : projectMatches.map((project) => (
                   <div
                     key={project.id}
-                    className="flex flex-col md:grid md:grid-cols-dashboard-table gap-3 md:gap-4 md:items-center p-5 md:px-7 hover:bg-slate-50 transition-colors"
+                    onClick={() => {
+                      if (project.sourceUrl) window.open(project.sourceUrl, '_blank')
+                    }}
+                    className="flex flex-col md:grid md:grid-cols-dashboard-table gap-3 md:gap-4 md:items-center p-5 md:px-7 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <div>
                       <p className="text-sm font-bold md:font-medium text-slate-800">{project.title}</p>
@@ -180,7 +183,11 @@ export default function DashboardPage() {
                     
                     <p className="hidden md:block text-sm text-slate-500">{project.date}</p>
                     
-                    <button aria-label="Project actions" className="hidden md:block text-slate-400 hover:text-slate-600 transition-colors p-1 rounded">
+                    <button 
+                      aria-label="Project actions" 
+                      onClick={(e) => e.stopPropagation()}
+                      className="hidden md:block text-slate-400 hover:text-slate-600 transition-colors p-1 rounded"
+                    >
                       <MoreVertical size={16} />
                     </button>
                   </div>
