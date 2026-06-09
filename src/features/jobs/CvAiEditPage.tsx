@@ -5,6 +5,7 @@ import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import type { CVData } from '@/features/cv-builder/types'
 import { MantineProvider } from '@mantine/core'
 import { cvUserInteraction } from '@/services/cvAiApi'
+import { getCvContent, saveCvContent } from '@/services/jobsApi'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
 
@@ -37,6 +38,7 @@ export default function CvAiEditPage() {
   const [cvData, setCvData] = useState<CVData>(INITIAL_CV)
   const [cvLoading, setCvLoading] = useState(true)
   const [cvError, setCvError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'chat' | 'preview'>('chat')
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -69,6 +71,19 @@ export default function CvAiEditPage() {
       setCvLoading(true)
       setCvError(null)
       try {
+        const numericId = Number(id)
+
+        // 1. Try to load previously saved full CV content
+        const stored = getCvContent(numericId)
+        if (stored) {
+          if (!cancelled) {
+            setCvData(stored)
+            setCvLoading(false)
+          }
+          return
+        }
+
+        // 2. No saved content — fall back to profile defaults
         let profileName = ''
         let profileTitle = ''
 
@@ -183,6 +198,10 @@ export default function CvAiEditPage() {
 
       // Update the live CV preview with the AI-modified version
       setCvData(updatedCv)
+      // Persist the AI-updated CV so "Edit Manually" sees the latest version
+      if (id) {
+        saveCvContent(Number(id), updatedCv)
+      }
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -248,10 +267,34 @@ export default function CvAiEditPage() {
         </div>
       )}
 
+      {/* Mobile tab switcher */}
+      <div className="flex lg:hidden border border-slate-200 rounded-xl overflow-hidden mb-4 shrink-0">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+            activeTab === 'chat'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          💬 Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+            activeTab === 'preview'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          📄 Preview CV
+        </button>
+      </div>
+
       {/* Main two-column layout */}
       <div className="flex flex-col lg:flex-row flex-1 gap-5 min-h-0">
-        {/* LEFT: CV Preview — hidden on mobile (too small to be useful) */}
-        <div className="hidden lg:flex flex-1 min-h-0 overflow-y-auto rounded-xl">
+        {/* LEFT: CV Preview — hidden on mobile unless preview tab is active */}
+        <div className={`${activeTab === 'preview' ? 'flex' : 'hidden'} lg:flex flex-1 min-h-0 overflow-y-auto rounded-xl`}>
           {cvLoading ? (
             <div className="flex items-center justify-center h-40 text-slate-400 text-sm gap-2">
               <Loader2 size={18} className="animate-spin" />
@@ -271,7 +314,7 @@ export default function CvAiEditPage() {
         </div>
 
         {/* RIGHT: Chat panel */}
-        <div className="w-full lg:w-[380px] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className={`${activeTab === 'chat' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[380px] flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden`}>
           {/* Chat header */}
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
             <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center">

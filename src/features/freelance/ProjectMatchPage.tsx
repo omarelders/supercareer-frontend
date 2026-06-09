@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronDown, Clock, ExternalLink, MapPin, Search, User, X, Zap } from 'lucide-react'
 import type { ProjectMatch } from '@/services/freelanceApi'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
@@ -226,7 +226,6 @@ function ProjectCardSkeleton() {
 
 export default function ProjectMatchPage() {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const { items, isLoading, error } = useAppSelector(selectProjectMatchesState)
   const [visibleCount, setVisibleCount] = useState(5)
   const [sortMode, setSortMode] = useState<SortMode>('relevance')
@@ -282,23 +281,8 @@ export default function ProjectMatchPage() {
   return (
     <div className="max-w-250 mx-auto px-4 md:px-6 py-6 md:py-12 bg-slate-50/50 min-h-screen">
 
-      {/* Mobile Top Header */}
-      <div className="flex md:hidden items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-slate-600 p-1"
-            aria-label="Go back"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <h1 className="text-lg font-bold text-slate-900">Project Matches</h1>
-        </div>
-        <button className="relative p-1 text-slate-600">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 border-2 border-slate-50" />
-        </button>
-      </div>
+      {/* Page title (mobile only — desktop has sidebar) */}
+      <h1 className="md:hidden text-xl font-bold text-slate-900 mb-4">Project Matches</h1>
 
       {/* Mobile Search */}
       <form onSubmit={handleMobileSearch} className="md:hidden mb-6 relative">

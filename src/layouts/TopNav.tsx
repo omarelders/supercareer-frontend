@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Bell, Briefcase, Clock, Search, Zap } from 'lucide-react'
+import { Bell, Briefcase, Clock, Menu, Search, Zap } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '@/components/Logo'
 import { useAuth } from '@/context/AuthContext'
@@ -22,7 +22,7 @@ function getShortName(name: string): string {
   return name
 }
 
-export default function TopNav() {
+export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -75,7 +75,14 @@ export default function TopNav() {
 
   return (
     <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white border-b border-slate-200">
-      <div className="flex md:hidden items-center">
+      <div className="flex md:hidden items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+        >
+          <Menu size={20} />
+        </button>
         <Logo className="" />
       </div>
 

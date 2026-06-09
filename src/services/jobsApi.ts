@@ -1,4 +1,5 @@
 import { fetchJobs, type ApiJob } from './opportunitiesApi'
+import type { CVData } from '@/features/cv-builder/types'
 
 
 
@@ -238,5 +239,38 @@ export async function renameCustomCV(id: number, newTitle: string): Promise<Cust
   const cvs = getStoredCVs().map((cv) => (cv.id === id ? { ...cv, title: newTitle } : cv))
   saveStoredCVs(cvs)
   return cvs
+}
+
+// ---------------------------------------------------------------------------
+// CV Content Storage (full CVData per CV id, stored separately)
+// ---------------------------------------------------------------------------
+
+const CV_CONTENT_STORAGE_KEY = 'supercareer_cv_content_v1'
+
+function getAllCvContents(): Record<number, CVData> {
+  const stored = localStorage.getItem(CV_CONTENT_STORAGE_KEY)
+  if (!stored) return {}
+  try {
+    return JSON.parse(stored)
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Returns the stored CVData for a given CV id, or null if none has been saved yet.
+ */
+export function getCvContent(id: number): CVData | null {
+  const all = getAllCvContents()
+  return all[id] ?? null
+}
+
+/**
+ * Persists the full CVData for a given CV id to localStorage.
+ */
+export function saveCvContent(id: number, data: CVData): void {
+  const all = getAllCvContents()
+  all[id] = data
+  localStorage.setItem(CV_CONTENT_STORAGE_KEY, JSON.stringify(all))
 }
 

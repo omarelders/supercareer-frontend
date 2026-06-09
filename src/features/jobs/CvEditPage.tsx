@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Save, CheckCircle, Loader2 } from 'lucide-react'
 import { MantineProvider } from '@mantine/core'
 import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import { PersonalDetailsForm } from '@/features/cv-builder/components/PersonalDetailsForm'
@@ -9,42 +9,24 @@ import { EducationForm } from '@/features/cv-builder/components/EducationForm'
 import { SkillsForm } from '@/features/cv-builder/components/SkillsForm'
 import { ProgressBar } from '@/features/cv-builder/components/ProgressBar'
 import type { CVData } from '@/features/cv-builder/types'
+import { getCvContent, saveCvContent } from '@/services/jobsApi'
+import api from '@/services/api'
+import { useAuth } from '@/context/AuthContext'
 import '@/features/cv-builder/cv-builder.css'
 
-// Mock pre-filled data — replace with API call using `id`
-const MOCK_INITIAL_DATA: CVData = {
+const EMPTY_CV: CVData = {
   personal: {
-    fullName: 'Abdullah Ahmed',
-    title: 'Senior Frontend Developer',
-    email: 'abdullah@example.com',
-    phone: '+20 100 000 0000',
-    location: 'Cairo, Egypt',
-    url: 'github.com/abdullah',
-    summary:
-      'Experienced frontend developer with 6+ years building scalable web applications using React, TypeScript and modern toolchains.',
+    fullName: '',
+    title: '',
+    email: '',
+    phone: '',
+    location: '',
+    url: '',
+    summary: '',
   },
-  experience: [
-    {
-      id: '1',
-      title: 'Senior Frontend Developer',
-      company: 'TechCorp International',
-      startDate: 'Jan 2022',
-      endDate: '',
-      current: true,
-      description:
-        'Led migration from Vue 2 to React 18, reducing bundle size by 40%. Architected a design-system used by 6 product teams.',
-    },
-  ],
-  education: [
-    {
-      id: '1',
-      school: 'Cairo University',
-      degree: 'B.Sc. Computer Science',
-      year: '2019',
-      description: 'Graduated with distinction.',
-    },
-  ],
-  skills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'Figma', 'AWS'],
+  experience: [],
+  education: [],
+  skills: [],
 }
 
 const STEPS = [
@@ -57,22 +39,111 @@ const STEPS = [
 export default function CvEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const [cvData, setCvData] = useState<CVData>(EMPTY_CV)
+  const [isDataLoading, setIsDataLoading] = useState(true)
+
   const [step, setStep] = useState(1)
-  const [cvData, setCvData] = useState<CVData>(MOCK_INITIAL_DATA)
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   const stepInfo = STEPS[step - 1]
 
+  // -------------------------------------------------------------------------
+  // Load CV content from localStorage (or fall back to profile defaults)
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!id) {
+      setIsDataLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadData() {
+      setIsDataLoading(true)
+
+      // 1. Try to load previously saved content for this CV id
+      const numericId = Number(id)
+      const stored = getCvContent(numericId)
+
+      if (stored) {
+        if (!cancelled) {
+          setCvData(stored)
+          setIsDataLoading(false)
+        }
+        return
+      }
+
+      // 2. No saved content yet — prefill name/title from profile API
+      let profileName = ''
+      let profileTitle = ''
+
+      try {
+        const { data } = await api.get('/api/profile/')
+        if (data) {
+          profileName =
+            data.full_name ||
+            [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+            data.username ||
+            ''
+          profileTitle = data.professional_title || ''
+        }
+      } catch {
+        // ignore — fallback to auth context below
+      }
+
+      if (!profileName && user) {
+        profileName =
+          (user.full_name as string) ||
+          (user.username as string) ||
+          (user.email as string) ||
+          ''
+      }
+
+      if (!cancelled) {
+        setCvData({
+          ...EMPTY_CV,
+          personal: {
+            ...EMPTY_CV.personal,
+            fullName: profileName,
+            title: profileTitle,
+          },
+        })
+        setIsDataLoading(false)
+      }
+    }
+
+    loadData()
+    return () => {
+      cancelled = true
+    }
+  }, [id, user])
+
+  // -------------------------------------------------------------------------
+  // Save
+  // -------------------------------------------------------------------------
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      // TODO: PUT /api/cv/{id}/ with cvData
+      if (id) {
+        saveCvContent(Number(id), cvData)
+      }
       setSaved(true)
-      navigate(-1)
+      setTimeout(() => navigate(-1), 600)
     } finally {
       setIsSaving(false)
     }
+  }
+
+  if (isDataLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-400 gap-2 text-sm">
+        <Loader2 size={18} className="animate-spin" />
+        Loading CV…
+      </div>
+    )
   }
 
   return (
@@ -94,7 +165,7 @@ export default function CvEditPage() {
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 className="text-base font-bold text-slate-800">Edit CV</h1>
+            <h1 className="text-base font-bold text-slate-800">Edit Manually</h1>
             <p className="text-xs text-slate-400">CV #{id}</p>
           </div>
 

@@ -51,66 +51,70 @@ export default function JobFilterBar({
 }: JobFilterBarProps) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3 mb-6 shadow-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 lg:pb-0 min-w-0">
-        <div className="flex items-center gap-2 pl-2 pr-1 text-slate-700">
-          <ListFilter size={18} className="text-slate-400" />
-          <span className="text-sm font-bold">Filters:</span>
+      <div className="relative min-w-0">
+        {/* Right-edge fade gradient to hint at scrollable content on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 lg:hidden" />
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 lg:pb-0 pr-6 lg:pr-0">
+          <div className="flex items-center gap-2 pl-2 pr-1 text-slate-700">
+            <ListFilter size={18} className="text-slate-400" />
+            <span className="text-sm font-bold">Filters:</span>
+          </div>
+
+          <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
+            <span>Location</span>
+            <select
+              value={filters.location}
+              onChange={(event) => onLocationChange(event.target.value as LocationFilter)}
+              className="bg-transparent text-sm text-slate-700 outline-none"
+            >
+              {LOCATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
+            <span>Type</span>
+            <select
+              value={filters.type}
+              onChange={(event) => onTypeChange(event.target.value as TypeFilter)}
+              className="bg-transparent text-sm text-slate-700 outline-none"
+            >
+              {TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
+            <span>Match</span>
+            <select
+              value={filters.minMatchPct}
+              onChange={(event) => onMinMatchChange(Number(event.target.value) as MatchThreshold)}
+              className="bg-transparent text-sm text-slate-700 outline-none"
+            >
+              {MATCH_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="w-px h-6 bg-slate-200 mx-1 shrink-0" />
+
+          <button
+            onClick={onClearFilters}
+            disabled={!hasActiveFilters}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors disabled:text-slate-300 disabled:hover:text-slate-300 shrink-0"
+          >
+            Clear all
+          </button>
         </div>
-
-        <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
-          <span>Location</span>
-          <select
-            value={filters.location}
-            onChange={(event) => onLocationChange(event.target.value as LocationFilter)}
-            className="bg-transparent text-sm text-slate-700 outline-none"
-          >
-            {LOCATION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
-          <span>Type</span>
-          <select
-            value={filters.type}
-            onChange={(event) => onTypeChange(event.target.value as TypeFilter)}
-            className="bg-transparent text-sm text-slate-700 outline-none"
-          >
-            {TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
-          <span>Match</span>
-          <select
-            value={filters.minMatchPct}
-            onChange={(event) => onMinMatchChange(Number(event.target.value) as MatchThreshold)}
-            className="bg-transparent text-sm text-slate-700 outline-none"
-          >
-            {MATCH_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="w-px h-6 bg-slate-200 mx-1" />
-
-        <button
-          onClick={onClearFilters}
-          disabled={!hasActiveFilters}
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors disabled:text-slate-300 disabled:hover:text-slate-300"
-        >
-          Clear all
-        </button>
       </div>
 
       <div className="flex items-center bg-slate-50/80 border border-slate-100 p-1 rounded-lg mr-1 self-start lg:self-auto">
