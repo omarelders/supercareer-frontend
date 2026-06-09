@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
-import { getCustomCVs, deleteCustomCV, updateCustomCVBase, type CustomCV } from '@/services/jobsApi'
+import { getCustomCVs, deleteCustomCV, updateCustomCVBase, renameCustomCV, type CustomCV } from '@/services/jobsApi'
 
 const CUSTOM_CV_PAGE_SIZE = 5
 
@@ -55,6 +55,18 @@ export const makeBaseCv = createAsyncThunk<
   }
 })
 
+export const renameCV = createAsyncThunk<
+  CustomCV[],
+  { id: number; newTitle: string },
+  { rejectValue: string }
+>('customCv/renameCV', async ({ id, newTitle }, { rejectWithValue }) => {
+  try {
+    return await renameCustomCV(id, newTitle)
+  } catch {
+    return rejectWithValue('Failed to rename CV.')
+  }
+})
+
 const customCvSlice = createSlice({
   name: 'customCv',
   initialState,
@@ -89,6 +101,9 @@ const customCvSlice = createSlice({
         state.currentPage = Math.min(state.currentPage, totalPages)
       })
       .addCase(makeBaseCv.fulfilled, (state, action) => {
+        state.items = action.payload
+      })
+      .addCase(renameCV.fulfilled, (state, action) => {
         state.items = action.payload
       })
   },

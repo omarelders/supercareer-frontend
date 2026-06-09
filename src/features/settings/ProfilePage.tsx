@@ -3,10 +3,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Edit3,
-  ExternalLink,
-  Plus,
   Settings,
-  Trash2,
   User,
 } from 'lucide-react'
 import api from '@/services/api'
@@ -61,28 +58,12 @@ interface ProfileForm {
   bio: string
 }
 
-interface ShowcaseProject {
-  id: number
-  name: string
-  link: string
-  description: string
-  technologies: string[]
-}
-
 const emptyForm: ProfileForm = {
   email: '',
   full_name: '',
   professional_title: '',
   location: '',
   bio: '',
-}
-
-const defaultProject: ShowcaseProject = {
-  id: 1,
-  name: 'AI Marketplace API',
-  link: 'https://api.hub.com/docs',
-  description: 'High-performance REST API built for handling real-time AI model transactions and usage metering.',
-  technologies: ['Node.js', 'PostgreSQL', 'Redis'],
 }
 
 function toForm(profile: ProfileResponse): ProfileForm {
@@ -169,7 +150,6 @@ function ProfileTab() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<ProfileForm>(emptyForm)
   const [profile, setProfile] = useState<ProfileResponse | null>(null)
-  const [projects, setProjects] = useState<ShowcaseProject[]>([defaultProject])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -246,26 +226,7 @@ function ProfileTab() {
     }
   }
 
-  const updateProject = (id: number, field: keyof Omit<ShowcaseProject, 'id' | 'technologies'>, value: string) => {
-    setProjects((current) => current.map((project) => (project.id === id ? { ...project, [field]: value } : project)))
-  }
 
-  const removeProject = (id: number) => {
-    setProjects((current) => current.filter((project) => project.id !== id))
-  }
-
-  const addProject = () => {
-    setProjects((current) => [
-      ...current,
-      {
-        id: Date.now(),
-        name: '',
-        link: '',
-        description: '',
-        technologies: ['React', 'API'],
-      },
-    ])
-  }
 
   if (isLoading) return <ProfileSkeleton />
 
@@ -354,83 +315,6 @@ function ProfileTab() {
         </div>
       </form>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-dashboard-card md:p-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <ExternalLink size={18} className="text-blue-600" />
-            <h2 className="text-lg font-bold text-slate-950">Showcase Projects</h2>
-          </div>
-          <button type="button" onClick={addProject} className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700">
-            <Plus size={15} />
-            Add New Project
-          </button>
-        </div>
-
-        <div className="space-y-5">
-          {projects.map((project) => (
-            <div key={project.id} className="rounded-xl border border-slate-100 bg-slate-50/40 p-5">
-              <div className="grid gap-5 md:grid-cols-2">
-                <label>
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Project Name</span>
-                  <input
-                    value={project.name}
-                    onChange={(event) => updateProject(project.id, 'name', event.target.value)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-                <label>
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Project Link</span>
-                  <input
-                    value={project.link}
-                    onChange={(event) => updateProject(project.id, 'link', event.target.value)}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-              </div>
-              <label className="mt-5 block">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Description</span>
-                <input
-                  value={project.description}
-                  onChange={(event) => updateProject(project.id, 'description', event.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="mr-2 text-xs font-bold uppercase tracking-widest text-slate-500">Technologies Used</span>
-                {project.technologies.map((tech) => (
-                  <span key={tech} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-600">
-                    {tech} x
-                  </span>
-                ))}
-                <button type="button" className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500">
-                  + Add Tag
-                </button>
-              </div>
-              <div className="mt-5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeProject(project.id)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-600"
-                >
-                  <Trash2 size={13} />
-                  Remove Project
-                </button>
-              </div>
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addProject}
-            className="flex min-h-32 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-sm font-semibold text-slate-500 transition hover:border-blue-200 hover:text-blue-600"
-          >
-            <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-900">
-              <Plus size={22} />
-            </span>
-            Add another project to your portfolio
-          </button>
-        </div>
-      </section>
     </div>
   )
 }

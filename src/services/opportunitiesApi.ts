@@ -50,6 +50,15 @@ export interface ProjectsRefreshResponse {
   imported_count: number
 }
 
+export interface GenerateProposalPayload {
+  user_profile: string
+  project_details: string
+}
+
+export interface GenerateProposalResponse {
+  proposal_text: string
+}
+
 export type ProposalStatus = 'sent' | 'draft' | 'accepted' | 'rejected' | 'in_review'
 
 export interface CreateProposalPayload {
@@ -103,6 +112,19 @@ export async function createProposal(
 ): Promise<ApiProposal> {
   const { data } = await api.post<ApiProposal>(
     '/api/opportunities/proposals/create/',
+    payload,
+  )
+  return data
+}
+
+/**
+ * Generate a professional project proposal using the backend AI endpoint.
+ */
+export async function generateProposal(
+  payload: GenerateProposalPayload,
+): Promise<GenerateProposalResponse> {
+  const { data } = await api.post<GenerateProposalResponse>(
+    '/API/proposel',
     payload,
   )
   return data

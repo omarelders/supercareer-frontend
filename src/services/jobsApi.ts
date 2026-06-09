@@ -202,3 +202,11 @@ export async function updateCustomCVBase(id: number): Promise<CustomCV[]> {
   saveStoredCVs(cvs)
   return cvs
 }
+
+export async function renameCustomCV(id: number, newTitle: string): Promise<CustomCV[]> {
+  await delay(300)
+  const cvs = getStoredCVs().map((cv) => (cv.id === id ? { ...cv, title: newTitle } : cv))
+  saveStoredCVs(cvs)
+  return cvs
+}
+

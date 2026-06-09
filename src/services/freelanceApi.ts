@@ -43,6 +43,8 @@ export interface Proposal {
   title: string
   status: 'Sent' | 'In Review' | 'Accepted' | 'Rejected'
   client: string
+  /** Raw proposal body text — used by the copy-to-clipboard button. */
+  content: string
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +152,7 @@ export function mapApiProposalToProposal(p: ApiProposal): Proposal {
     title,
     status: mapProposalStatus(p.status),
     client,
+    content: p.content ?? '',
   }
 }
 
@@ -178,6 +181,7 @@ export function mapDocProposalToProposal(p: DocApiProposal): Proposal {
     // DocProposalStatus and ProposalStatus share the same values
     status: mapProposalStatus(p.status as ApiProposal['status']),
     client,
+    content: p.content ?? '',
   }
 }
 

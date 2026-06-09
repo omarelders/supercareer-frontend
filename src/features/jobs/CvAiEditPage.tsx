@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Sparkles, User, Bot, Loader2 } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, User, Bot, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import type { CVData } from '@/features/cv-builder/types'
 import { MantineProvider } from '@mantine/core'
+import { cvUserInteraction } from '@/services/cvAiApi'
 
 interface Message {
   id: string
@@ -11,56 +12,29 @@ interface Message {
   content: string
 }
 
-// Mock CV data that would come from the back-end
-const MOCK_CV_DATA: CVData = {
+const INITIAL_CV: CVData = {
   personal: {
-    fullName: 'Abdullah Ahmed',
-    title: 'Senior Frontend Developer',
-    email: 'abdullah@example.com',
-    phone: '+20 100 000 0000',
-    location: 'Cairo, Egypt',
-    url: 'github.com/abdullah',
-    summary:
-      'Experienced frontend developer with 6+ years building scalable web applications using React, TypeScript and modern toolchains. Passionate about performance, clean architecture and great UX.',
+    fullName: '',
+    title: '',
+    email: '',
+    phone: '',
+    location: '',
+    url: '',
+    summary: '',
   },
-  experience: [
-    {
-      id: '1',
-      title: 'Senior Frontend Developer',
-      company: 'TechCorp International',
-      startDate: 'Jan 2022',
-      endDate: '',
-      current: true,
-      description:
-        'Led migration from Vue 2 to React 18, reducing bundle size by 40%. Architected a design-system used by 6 product teams.',
-    },
-    {
-      id: '2',
-      title: 'Frontend Developer',
-      company: 'NeoBank Systems',
-      startDate: 'Mar 2019',
-      endDate: 'Dec 2021',
-      current: false,
-      description:
-        'Built real-time trading dashboards with WebSocket integration, serving 50k+ daily active users.',
-    },
-  ],
-  education: [
-    {
-      id: '1',
-      school: 'Cairo University',
-      degree: 'B.Sc. Computer Science',
-      year: '2019',
-      description: 'Graduated with distinction. Specialized in software engineering.',
-    },
-  ],
-  skills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'Figma', 'AWS', 'Tailwind CSS'],
+  experience: [],
+  education: [],
+  skills: [],
 }
 
 export default function CvAiEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [cvData, setCvData] = useState<CVData>(MOCK_CV_DATA)
+
+  const [cvData, setCvData] = useState<CVData>(INITIAL_CV)
+  const [cvLoading, setCvLoading] = useState(true)
+  const [cvError, setCvError] = useState<string | null>(null)
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -71,13 +45,73 @@ export default function CvAiEditPage() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // ---------------------------------------------------------------------------
+  // Fetch CV data on mount
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!id) {
+      setCvError('No CV ID provided.')
+      setCvLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadCv() {
+      setCvLoading(true)
+      setCvError(null)
+      try {
+        // Import dynamically to avoid circular deps; the slice already has the CVs in localStorage
+        const { getCustomCVs } = await import('@/services/jobsApi')
+        const cvs = await getCustomCVs()
+        const found = cvs.find((cv) => String(cv.id) === String(id))
+
+        if (!found) {
+          // CV not found in list – show a placeholder state with a notice
+          // The AI interaction will still work because we send the current cvData
+          if (!cancelled) {
+            setCvError(null)
+            setCvLoading(false)
+          }
+          return
+        }
+
+        // The list endpoint only returns metadata (id, title, date…).
+        // If the backend exposes a GET /API/CV/{id}/ endpoint in the future,
+        // call it here to hydrate the full CVData. For now we surface the
+        // metadata we have and let the AI interaction fill in the rest.
+        if (!cancelled) {
+          setCvLoading(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCvError('Failed to load CV data. You can still chat with the AI.')
+          setCvLoading(false)
+        }
+      }
+    }
+
+    loadCv()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  // ---------------------------------------------------------------------------
+  // Auto-scroll on new messages
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // ---------------------------------------------------------------------------
+  // Auto-resize textarea
+  // ---------------------------------------------------------------------------
   const autoResize = () => {
     const el = textareaRef.current
     if (!el) return
@@ -85,6 +119,9 @@ export default function CvAiEditPage() {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }
 
+  // ---------------------------------------------------------------------------
+  // Send message → call API → update CV preview
+  // ---------------------------------------------------------------------------
   const handleSend = async () => {
     const trimmed = input.trim()
     if (!trimmed || isLoading) return
@@ -92,36 +129,37 @@ export default function CvAiEditPage() {
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmed }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
+    setSendError(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setIsLoading(true)
 
     try {
-      // TODO: replace with real API call
-      // const response = await api.post('/API/CV/optimiz/user_interaction', {
-      //   cv_id: id,
-      //   message: trimmed,
-      // })
-      // const updatedCv = response.data.cv
-      // setCvData(updatedCv)
+      const { updatedCv, aiMessage } = await cvUserInteraction(cvData, trimmed)
 
-      // Mock response for now
-      await new Promise((r) => setTimeout(r, 1500))
+      // Update the live CV preview with the AI-modified version
+      setCvData(updatedCv)
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content:
-          "I've updated your CV based on your request. The changes are reflected in the preview on the left. Feel free to ask for more adjustments!",
+        content: aiMessage,
       }
       setMessages((prev) => [...prev, assistantMsg])
+    } catch (err: unknown) {
+      // Surface the error in the chat rather than crashing
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.'
 
-      // Simulate a small CV update
-      setCvData((prev) => ({
-        ...prev,
-        personal: {
-          ...prev.personal,
-          summary: prev.personal.summary + ' ' + '(AI-optimized for ' + trimmed.slice(0, 30) + '…)',
-        },
-      }))
+      setSendError(message)
+
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `⚠️ I ran into an issue processing your request. ${message} Please try again.`,
+      }
+      setMessages((prev) => [...prev, errorMsg])
     } finally {
       setIsLoading(false)
     }
@@ -134,6 +172,9 @@ export default function CvAiEditPage() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
     <div className="flex flex-col h-full w-full">
       {/* Top bar */}
@@ -154,19 +195,34 @@ export default function CvAiEditPage() {
         </div>
       </div>
 
+      {/* CV load error banner */}
+      {cvError && (
+        <div className="flex items-center gap-2 mb-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs">
+          <AlertCircle size={14} className="flex-shrink-0" />
+          <span>{cvError}</span>
+        </div>
+      )}
+
       {/* Main two-column layout */}
       <div className="flex flex-1 gap-5 min-h-0">
         {/* LEFT: CV Preview */}
         <div className="flex-1 min-h-0 overflow-y-auto rounded-xl">
-          <MantineProvider
-            theme={{
-              fontFamily: 'Inter, sans-serif',
-              headings: { fontFamily: 'Manrope, sans-serif' },
-              primaryColor: 'blue',
-            }}
-          >
-            <CVPreview data={cvData} />
-          </MantineProvider>
+          {cvLoading ? (
+            <div className="flex items-center justify-center h-40 text-slate-400 text-sm gap-2">
+              <Loader2 size={18} className="animate-spin" />
+              Loading CV…
+            </div>
+          ) : (
+            <MantineProvider
+              theme={{
+                fontFamily: 'Inter, sans-serif',
+                headings: { fontFamily: 'Manrope, sans-serif' },
+                primaryColor: 'blue',
+              }}
+            >
+              <CVPreview data={cvData} />
+            </MantineProvider>
+          )}
         </div>
 
         {/* RIGHT: Chat panel */}
@@ -225,6 +281,21 @@ export default function CvAiEditPage() {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Send error banner */}
+          {sendError && (
+            <div className="mx-4 mb-2 flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
+              <AlertCircle size={12} className="flex-shrink-0" />
+              <span className="flex-1">{sendError}</span>
+              <button
+                onClick={() => setSendError(null)}
+                className="hover:text-red-800 transition-colors"
+                aria-label="Dismiss error"
+              >
+                <RefreshCw size={11} />
+              </button>
+            </div>
+          )}
 
           {/* Input */}
           <div className="px-4 py-3 border-t border-slate-100 bg-slate-50">

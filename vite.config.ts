@@ -15,6 +15,10 @@ export default defineConfig({
       '/api': {
         target: 'http://76.13.55.54:8000',
         changeOrigin: true,
+      },
+      '/API': {
+        target: 'http://76.13.55.54:8080',
+        changeOrigin: true,
       }
     }
   }

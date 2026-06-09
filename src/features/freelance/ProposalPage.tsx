@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Copy, FileText } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Copy, CheckCircle2, FileText } from 'lucide-react'
 import PaginationControls from '@/components/pagination/PaginationControls'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
@@ -10,13 +10,21 @@ import {
 } from '@/store/slices/freelanceSlice'
 import ProposalRowSkeleton from './components/ProposalRowSkeleton'
 
-
-
 export default function ProposalPage() {
   const dispatch = useAppDispatch()
   const { isLoading, error, currentPage } = useAppSelector(selectProposalsState)
   const { totalItems, totalPages, startIndex, endIndex, paginatedItems } =
     useAppSelector(selectProposalPagination)
+
+  /** Track which proposal id was just copied so we can show per-row feedback. */
+  const [copiedId, setCopiedId] = useState<number | null>(null)
+
+  const handleCopy = useCallback((id: number, content: string) => {
+    void navigator.clipboard.writeText(content).then(() => {
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 2000)
+    })
+  }, [])
 
   useEffect(() => {
     dispatch(fetchProposals())
@@ -63,8 +71,14 @@ export default function ProposalPage() {
                   <div className="flex justify-between items-center md:block">
                     <div className="text-xs md:text-sm text-slate-500 font-medium">{proposal.date}</div>
                     <div className="md:hidden">
-                       <button aria-label="Copy proposal" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors bg-slate-50">
-                        <Copy size={16} />
+                       <button
+                        aria-label="Copy proposal"
+                        onClick={() => handleCopy(proposal.id, proposal.content)}
+                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors bg-slate-50"
+                      >
+                        {copiedId === proposal.id
+                          ? <CheckCircle2 size={16} className="text-emerald-500" />
+                          : <Copy size={16} />}
                       </button>
                     </div>
                   </div>
@@ -82,8 +96,16 @@ export default function ProposalPage() {
                   </div>
 
                   <div className="hidden md:flex items-center gap-2">
-                    <button aria-label="Copy proposal" className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors">
-                      <Copy size={18} />
+                    <button
+                      aria-label="Copy proposal"
+                      onClick={() => handleCopy(proposal.id, proposal.content)}
+                      title={copiedId === proposal.id ? 'Copied!' : 'Copy to clipboard'}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                    >
+                      {copiedId === proposal.id
+                        ? <CheckCircle2 size={14} className="text-emerald-500" />
+                        : <Copy size={14} />}
+                      <span>{copiedId === proposal.id ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>

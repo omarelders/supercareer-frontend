@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Download, MoreVertical, PlusCircle, Sparkles, Star, Pencil, Trash2 } from 'lucide-react'
+import { MoreVertical, PlusCircle, Sparkles, Star, Pencil, Trash2, PenLine } from 'lucide-react'
 import PaginationControls from '@/components/pagination/PaginationControls'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
@@ -9,9 +9,35 @@ import {
   setCustomCvPage,
   deleteCV,
   makeBaseCv,
+  renameCV,
 } from '@/store/slices/customCvSlice'
 import CvRowSkeleton from './components/CvRowSkeleton'
 import { useNavigate } from 'react-router-dom'
+import { CvPdfDownloadButton } from '@/features/cv-builder/components/CvPdfDownloadButton'
+import type { CVData } from '@/features/cv-builder/types'
+import type { CustomCV } from '@/services/jobsApi'
+
+/**
+ * Builds a minimal CVData object from the list-level metadata.
+ * When a real GET /api/cv/{id}/ endpoint is available, replace this
+ * with an actual fetch so the PDF contains the full content.
+ */
+function buildPlaceholderCvData(row: CustomCV): CVData {
+  return {
+    personal: {
+      fullName: '',
+      title: row.title,
+      email: '',
+      phone: '',
+      location: '',
+      url: '',
+      summary: '',
+    },
+    experience: [],
+    education: [],
+    skills: [],
+  }
+}
 
 interface DropdownState {
   openId: number | null
@@ -26,6 +52,9 @@ export default function CustomCVPage() {
 
   const [dropdown, setDropdown] = useState<DropdownState>({ openId: null })
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const [renameId, setRenameId] = useState<number | null>(null)
+  const [renameValue, setRenameValue] = useState<string>('')
 
   const hasBaseCv = allItems.some((cv) => cv.base_cv)
 
@@ -46,6 +75,27 @@ export default function CustomCVPage() {
 
   const toggleDropdown = (id: number) => {
     setDropdown((prev) => ({ openId: prev.openId === id ? null : id }))
+  }
+
+  const handleRenameSubmit = (id: number, originalTitle: string) => {
+    if (renameId !== id) return
+    const trimmed = renameValue.trim()
+    if (trimmed && trimmed !== originalTitle) {
+      dispatch(renameCV({ id, newTitle: trimmed }))
+    }
+    setRenameId(null)
+  }
+
+  const handleRenameKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    id: number,
+    originalTitle: string
+  ) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit(id, originalTitle)
+    } else if (e.key === 'Escape') {
+      setRenameId(null)
+    }
   }
 
   return (
@@ -93,14 +143,28 @@ export default function CustomCVPage() {
                   </div>
 
                   {/* Title */}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-slate-800">{row.title}</span>
-                      {row.base_cv && (
-                        <span className="inline-flex items-center gap-1 h-5 px-2 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                          <Star size={10} className="fill-blue-500 text-blue-500" />
-                          Base CV
-                        </span>
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-4">
+                    <div className="flex items-center gap-2 w-full">
+                      {renameId === row.id ? (
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => handleRenameKeyDown(e, row.id, row.title)}
+                          onBlur={() => handleRenameSubmit(row.id, row.title)}
+                          autoFocus
+                          className="text-base font-bold text-slate-800 bg-white border border-blue-500 rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-blue-100 w-full max-w-md"
+                        />
+                      ) : (
+                        <>
+                          <span className="text-base font-bold text-slate-800 truncate">{row.title}</span>
+                          {row.base_cv && (
+                            <span className="inline-flex items-center gap-1 h-5 px-2 bg-blue-100 text-blue-700 text-xs font-bold rounded-full shrink-0">
+                              <Star size={10} className="fill-blue-500 text-blue-500" />
+                              Base CV
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                     <div className="text-sm text-slate-400">Applied to: {row.appliedTo}</div>
@@ -119,13 +183,11 @@ export default function CustomCVPage() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-1 text-slate-400 relative">
-                    {/* Download */}
-                    <button
-                      aria-label="Download CV"
-                      className="hover:text-slate-600 p-1.5 rounded-md hover:bg-slate-100 transition-colors"
-                    >
-                      <Download size={17} strokeWidth={2} />
-                    </button>
+                    {/* Download as PDF */}
+                    <CvPdfDownloadButton
+                      cvData={buildPlaceholderCvData(row)}
+                      filename={row.title}
+                    />
 
                     {/* 3-dot menu */}
                     <div className="relative">
@@ -148,6 +210,17 @@ export default function CustomCVPage() {
                           >
                             <Pencil size={14} className="text-slate-400" />
                             Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRenameId(row.id)
+                              setRenameValue(row.title)
+                              setDropdown({ openId: null })
+                            }}
+                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                          >
+                            <PenLine size={14} className="text-slate-400" />
+                            Rename
                           </button>
                           {!row.base_cv && (
                             <button

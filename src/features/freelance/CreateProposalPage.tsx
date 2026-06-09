@@ -8,7 +8,13 @@ import {
   Send,
   Sparkles,
 } from 'lucide-react'
-import { fetchProjects, createProposal, type ApiProject } from '@/services/opportunitiesApi'
+import api from '@/services/api'
+import {
+  createProposal,
+  fetchProjects,
+  generateProposal,
+  type ApiProject,
+} from '@/services/opportunitiesApi'
 import { mapApiProjectToProjectMatch } from '@/services/freelanceApi'
 import { useAuth } from '@/context/AuthContext'
 
@@ -16,31 +22,115 @@ import { useAuth } from '@/context/AuthContext'
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Generate a realistic-looking AI proposal from the project data */
-function buildProposalText(project: ApiProject, senderName: string): string {
-  const skills = project.required_skills.slice(0, 5).join(', ') || 'relevant technologies'
-  return `Dear Hiring Team at ${project.platform_name || 'your company'},
+interface ProfileResponse {
+  full_name?: string
+  username?: string
+  email?: string
+  professional_title?: string
+  location?: string
+  bio?: string
+  specialization?: string
+  experience?: string
+  skills?: string[]
+  experiences?: Array<{
+    job_title: string
+    company: string
+    description: string
+    start_date: string
+    end_date: string
+    is_current: boolean
+  }>
+}
 
-I'm excited to apply for the ${project.title} project. With extensive hands-on experience in ${skills}, I'm confident I can deliver exactly what you're looking for—on time and to the highest standard.
+function getDefaultProject(): ApiProject {
+  return {
+    id: 0,
+    title: 'Your Project',
+    description: 'A professional project that needs a tailored proposal.',
+    budget: 'Not specified',
+    deadline: 'Not specified',
+    duration: 'Not specified',
+    status: 'Open',
+    required_skills: [],
+    platform_name: 'the client',
+    source_url: '',
+    posted_date: '',
+    scraped_at: '',
+    match_score: 0,
+  }
+}
 
-After reviewing your project brief, I understand you need a seasoned professional to handle the complete scope of this engagement. My approach centres on clean, maintainable solutions backed by thorough testing and clear communication throughout every phase.
+function buildUserProfileText(profile: ProfileResponse | null, displayName: string): string {
+  if (!profile) return `Name: ${displayName}`
+  const skillsStr = profile.skills?.length ? profile.skills.join(', ') : 'Not specified'
+  const expStr = profile.experiences?.map(e => 
+    `- ${e.job_title} at ${e.company}: ${e.description}`
+  ).join('\n') || 'Not specified'
+  
+  return [
+    `Name: ${profile.full_name || displayName}`,
+    `Title: ${profile.professional_title || 'Freelancer'}`,
+    `Bio/Summary: ${profile.bio || 'Not specified'}`,
+    `Specialization: ${profile.specialization || 'Not specified'}`,
+    `Skills: ${skillsStr}`,
+    `Experience:\n${expStr}`
+  ].join('\n')
+}
 
-Here's how I plan to tackle your project:
+function buildProjectDetailsText(project: ApiProject): string {
+  const skillsStr = project.required_skills?.length ? project.required_skills.join(', ') : 'Not specified'
+  return [
+    `Project Title: ${project.title}`,
+    `Description: ${project.description}`,
+    `Budget: ${project.budget || 'Not specified'}`,
+    `Duration: ${project.duration || 'Not specified'}`,
+    `Required Skills: ${skillsStr}`
+  ].join('\n')
+}
 
-• Discovery & Planning – I'll start with a deep-dive into your existing codebase and requirements to produce a robust technical specification within the first few days.
+function getErrorMessage(error: unknown): string {
+  const err = error as {
+    response?: { data?: unknown }
+    message?: string
+    code?: string
+  }
 
-• Iterative Development – Working in short cycles, I'll deliver working increments regularly so you can provide feedback early and often, keeping us aligned at every stage.
+  const data = err.response?.data
 
-• Quality Assurance – Every feature ships with automated tests. I won't consider a task done until it's been reviewed, tested, and documented.
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const record = data as Record<string, unknown>
 
-• Handover & Support – At project completion I'll provide full documentation, recorded walkthroughs, and a period of post-launch support to ensure a smooth handover.
+    if (Array.isArray(record.detail)) {
+      const messages = record.detail
+        .map((item) => {
+          if (item && typeof item === 'object' && 'msg' in item) {
+            return String((item as { msg?: unknown }).msg ?? '')
+          }
+          return ''
+        })
+        .filter(Boolean)
 
-My track record includes similar engagements where I've delivered measurable improvements in performance, scalability, and user experience. I'd love the opportunity to bring that same rigour to your project.
+      if (messages.length) return messages.join(' | ')
+    }
 
-I'm available to start promptly and am happy to jump on a call to discuss further.
+    const messages = Object.entries(record)
+      .map(([field, value]) => {
+        if (Array.isArray(value)) {
+          return `${field}: ${String(value[0] ?? '')}`
+        }
+        return `${field}: ${String(value)}`
+      })
+      .filter((entry) => !entry.endsWith(': '))
 
-Best regards,
-${senderName}`
+    if (messages.length) return messages.join(' | ')
+  }
+
+  if (typeof data === 'string' && data.trim()) return data
+  if (err.code === 'ERR_NETWORK' || !err.response) {
+    return 'Unable to reach the server. Please check your connection and try again.'
+  }
+
+  return err.message ?? 'Failed to generate proposal. Please try again.'
 }
 
 // ---------------------------------------------------------------------------
@@ -93,91 +183,126 @@ export default function CreateProposalPage() {
   const [isLoadingProject, setIsLoadingProject] = useState(!!projectId)
   const [projectError, setProjectError] = useState<string | null>(null)
 
+  const [profile, setProfile] = useState<ProfileResponse | null>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+
   const [generating, setGenerating] = useState(false)
   const [proposalText, setProposalText] = useState('')
   const [typingEnabled, setTypingEnabled] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  // Load project details if a projectId is provided
+  // Load the project details if a projectId is provided.
   useEffect(() => {
-    if (!projectId) return
+    if (!projectId) {
+      setIsLoadingProject(false)
+      return
+    }
+
     let cancelled = false
 
     fetchProjects()
       .then((projects) => {
         if (cancelled) return
         const found = projects.find((p) => String(p.id) === projectId)
-        if (!found) { setProjectError('Project not found.'); return }
+        if (!found) {
+          setProjectError('Project not found.')
+          return
+        }
         setProject(found)
       })
-      .catch(() => { if (!cancelled) setProjectError('Failed to load project.') })
-      .finally(() => { if (!cancelled) setIsLoadingProject(false) })
+      .catch(() => {
+        if (!cancelled) setProjectError('Failed to load project.')
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingProject(false)
+      })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [projectId])
 
-  // Auto-generate proposal once project loads
+  // Load the richer user profile context for the generation prompt.
   useEffect(() => {
-    if (project && !proposalText) {
-      handleGenerate()
+    let cancelled = false
+
+    async function loadProfile() {
+      setIsLoadingProfile(true)
+      try {
+        const { data } = await api.get<ProfileResponse>('/api/profile/')
+        if (!cancelled) setProfile(data)
+      } catch {
+        if (!cancelled) setProfile(null)
+      } finally {
+        if (!cancelled) setIsLoadingProfile(false)
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project])
+
+    void loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Auto-generate once we have enough context.
+  useEffect(() => {
+    if (isLoadingProfile || generating || proposalText) return
+    if (projectId && !project) return
+    void handleGenerate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, projectId, isLoadingProfile])
 
   const { displayed, done: typingDone } = useTypingEffect(proposalText, 8, typingEnabled)
 
-  function handleGenerate() {
+  async function handleGenerate() {
     setGenerating(true)
     setTypingEnabled(false)
     setProposalText('')
+    setGenerationError(null)
     setSubmitted(false)
     setSubmitError(null)
 
-    // Simulate AI generation delay
-    setTimeout(() => {
-      const text = buildProposalText(
-        project ?? {
-          id: 0,
-          title: 'Your Project',
-          description: '',
-          budget: '',
-          deadline: '',
-          duration: '',
-          status: '',
-          required_skills: [],
-          platform_name: 'the client',
-          source_url: '',
-          posted_date: '',
-          scraped_at: '',
-          match_score: 0,
-        },
-        displayName
-      )
-      setProposalText(text)
-      setGenerating(false)
+    try {
+      const targetProject = project ?? getDefaultProject()
+      const userProfileText = buildUserProfileText(profile, displayName)
+      const projectDetailsText = buildProjectDetailsText(targetProject)
+
+      const response = await generateProposal({
+        user_profile: userProfileText,
+        project_details: projectDetailsText,
+      })
+
+      setProposalText(response.proposal_text)
       setTypingEnabled(true)
-    }, 1800)
+    } catch (error) {
+      setGenerationError(getErrorMessage(error))
+    } finally {
+      setGenerating(false)
+    }
   }
 
   async function handleSendProposal() {
     if (!proposalText || submitting || submitted) return
     setSubmitting(true)
     setSubmitError(null)
+
     try {
       const textToCopy = typingDone ? proposalText : displayed
       await navigator.clipboard.writeText(textToCopy)
-      
+
       await createProposal({
         project: project?.id ?? null,
         content: proposalText,
         status: 'sent',
       })
       setSubmitted(true)
-      
+
       if (project?.source_url) {
         window.open(project.source_url, '_blank')
       }
@@ -202,8 +327,6 @@ export default function CreateProposalPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-2 sm:px-4 py-6 space-y-6">
-
-      {/* Back */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
@@ -212,11 +335,10 @@ export default function CreateProposalPage() {
         Back
       </button>
 
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">AI Proposal Generator</h1>
         {isLoadingProject ? (
-          <p className="text-slate-400 text-sm mt-1 animate-pulse">Loading project details…</p>
+          <p className="text-slate-400 text-sm mt-1 animate-pulse">Loading project details...</p>
         ) : projectError ? (
           <p className="text-red-400 text-sm mt-1">{projectError}</p>
         ) : (
@@ -227,7 +349,6 @@ export default function CreateProposalPage() {
         )}
       </div>
 
-      {/* Project summary pill (if loaded) */}
       {projectMatch && (
         <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm">
           <Sparkles size={15} className="text-blue-500 shrink-0" />
@@ -236,9 +357,7 @@ export default function CreateProposalPage() {
         </div>
       )}
 
-      {/* Proposal text area */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Toolbar */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/60">
           <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
             <Sparkles size={13} className="text-blue-500" />
@@ -246,12 +365,12 @@ export default function CreateProposalPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleGenerate}
-              disabled={generating || isLoadingProject}
+              onClick={() => void handleGenerate()}
+              disabled={generating || isLoadingProject || isLoadingProfile}
               className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
             >
               <Sparkles size={12} />
-              {generating ? 'Generating…' : 'Regenerate'}
+              {generating ? 'Generating...' : 'Regenerate'}
             </button>
             <button
               onClick={handleCopy}
@@ -264,14 +383,13 @@ export default function CreateProposalPage() {
           </div>
         </div>
 
-        {/* Content area */}
         <div className="min-h-[420px] px-6 py-5 relative">
           {generating ? (
             <div className="flex flex-col items-center justify-center h-72 gap-4">
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
                 <Loader2 size={22} className="text-blue-500 animate-spin" />
               </div>
-              <p className="text-sm text-slate-400 animate-pulse">Crafting your personalised proposal…</p>
+              <p className="text-sm text-slate-400 animate-pulse">Crafting your personalised proposal...</p>
             </div>
           ) : proposalText ? (
             <pre className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
@@ -288,10 +406,13 @@ export default function CreateProposalPage() {
               <p className="text-sm text-slate-400">Click "Regenerate" to generate a proposal</p>
             </div>
           )}
+
+          {generationError && (
+            <p className="mt-4 text-xs text-red-500">{generationError}</p>
+          )}
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={() => void handleSendProposal()}
@@ -303,11 +424,17 @@ export default function CreateProposalPage() {
           }`}
         >
           {submitting ? (
-            <><Loader2 size={15} className="animate-spin" /> Sending…</>
+            <>
+              <Loader2 size={15} className="animate-spin" /> Sending...
+            </>
           ) : submitted ? (
-            <><CheckCircle2 size={15} /> Proposal Sent!</>
+            <>
+              <CheckCircle2 size={15} /> Proposal Sent!
+            </>
           ) : (
-            <><Send size={15} /> Send Proposal</>
+            <>
+              <Send size={15} /> Send Proposal
+            </>
           )}
         </button>
 
@@ -319,9 +446,7 @@ export default function CreateProposalPage() {
         </button>
       </div>
 
-      {submitError && (
-        <p className="text-xs text-red-500 text-center">{submitError}</p>
-      )}
+      {submitError && <p className="text-xs text-red-500 text-center">{submitError}</p>}
     </div>
   )
 }
