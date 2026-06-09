@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -9,6 +9,7 @@ import {
   RingProgress,
   Badge,
   Center,
+  Loader,
 } from '@mantine/core';
 import { CheckCircle2, Download, Save, Zap, HelpCircle } from 'lucide-react';
 import type { CVData } from '../types';
@@ -16,6 +17,7 @@ import { generatePDFFromCV } from '../utils/pdfGenerator';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { saveCvDocument, selectCvDocumentState } from '@/store/slices/cvDocumentSlice';
 import { selectUser } from '@/store/slices/authSlice';
+import { analyzeCvAts } from '@/services/cvAiApi';
 
 interface ATSScoreProps {
   data: CVData;
@@ -27,6 +29,33 @@ export function ATSScore({ data }: ATSScoreProps) {
   const { isSaving, lastSaved, error: saveError } = useAppSelector(selectCvDocumentState);
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [atsScore, setAtsScore] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchScore = async () => {
+      setIsAnalyzing(true);
+      try {
+        const res = await analyzeCvAts(data);
+        if (mounted) {
+          setAtsScore(res.ats_score);
+          setFeedback(res.feedback);
+        }
+      } catch (err) {
+        console.error('Failed to analyze ATS score:', err);
+      } finally {
+        if (mounted) {
+          setIsAnalyzing(false);
+        }
+      }
+    };
+    fetchScore();
+    return () => {
+      mounted = false;
+    };
+  }, [data]);
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
@@ -51,13 +80,13 @@ export function ATSScore({ data }: ATSScoreProps) {
     // Derive user id from auth state (stored as { id: number, ... })
     const userId = typeof user?.id === 'number' ? user.id : 0;
 
-    // Simple ATS heuristic: 60 base + up to 40 pts for skills breadth
-    const atsScore = Math.min(100, 60 + Math.min(40, data.skills.length * 4));
+    // Simple ATS heuristic fallback
+    const finalAtsScore = atsScore ?? Math.min(100, 60 + Math.min(40, data.skills.length * 4));
 
     const result = await dispatch(
       saveCvDocument({
         content: JSON.stringify(data),
-        ats_score: atsScore,
+        ats_score: finalAtsScore,
         user: userId,
         job: null,
       })
@@ -114,19 +143,25 @@ export function ATSScore({ data }: ATSScoreProps) {
         </Group>
 
         <Stack gap="xl" align="center">
-          <RingProgress
-            size={140}
-            thickness={12}
-            roundCaps
-            sections={[{ value: 94, color: '#135BEC' }]}
-            label={
-              <Center>
-                <Text ff="Public Sans" fw={900} size="xl" style={{ fontSize: 32 }} c="#135BEC">
-                  94%
-                </Text>
-              </Center>
-            }
-          />
+          {isAnalyzing ? (
+            <Center h={140} w={140}>
+              <Loader size="xl" color="#135BEC" />
+            </Center>
+          ) : (
+            <RingProgress
+              size={140}
+              thickness={12}
+              roundCaps
+              sections={[{ value: atsScore ?? 0, color: '#135BEC' }]}
+              label={
+                <Center>
+                  <Text ff="Public Sans" fw={900} size="xl" style={{ fontSize: 32 }} c="#135BEC">
+                    {atsScore ?? 0}%
+                  </Text>
+                </Center>
+              }
+            />
+          )}
 
           <Stack gap="sm" style={{ width: '100%' }}>
             <Text ff="Public Sans" size="md" c="#475569" lh={1.6}>
@@ -224,24 +259,24 @@ export function ATSScore({ data }: ATSScoreProps) {
         </Group>
 
         <Stack gap="md" mb="xl">
-          <Paper p="md" radius="sm" withBorder style={{ borderColor: '#135BEC' }}>
-            <Text ff="Public Sans" fw={600} size="xs" c="#135BEC" mb={4}>
-              Impact Boost
-            </Text>
+          {isAnalyzing ? (
+            <Center py="xl">
+              <Loader color="#135BEC" />
+            </Center>
+          ) : feedback ? (
+            <Paper p="md" radius="sm" withBorder style={{ borderColor: '#135BEC' }}>
+              <Text ff="Public Sans" fw={600} size="xs" c="#135BEC" mb={4}>
+                Feedback
+              </Text>
+              <Text ff="Public Sans" size="sm" c="#CBD5E1">
+                {feedback}
+              </Text>
+            </Paper>
+          ) : (
             <Text ff="Public Sans" size="sm" c="#CBD5E1">
-              Change &quot;Responsible for project management&quot; to &quot;Orchestrated 4
-              cross-functional teams to deliver project 20% ahead of schedule.&quot;
+              No feedback available.
             </Text>
-          </Paper>
-          <Paper p="md" radius="sm" withBorder style={{ borderColor: '#135BEC' }}>
-            <Text ff="Public Sans" fw={600} size="xs" c="#135BEC" mb={4}>
-              Layout Tip
-            </Text>
-            <Text ff="Public Sans" size="sm" c="#CBD5E1">
-              The current font size for headers is perfect for OCR scanners, but consider slightly
-              increasing line spacing in your Bio.
-            </Text>
-          </Paper>
+          )}
         </Stack>
 
         <Button fullWidth variant="outline" color="white" style={{ borderColor: 'white' }}>

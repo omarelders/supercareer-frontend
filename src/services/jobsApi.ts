@@ -117,6 +117,36 @@ function resolveLocation(raw: string): JobLocation {
   return 'On-site'
 }
 
+function resolveJobType(job: ApiJob): JobType {
+  const title = (job.title ?? '').toLowerCase()
+  const desc = (job.description ?? '').toLowerCase()
+
+  if (
+    title.includes('contract') ||
+    title.includes('freelance') ||
+    title.includes('temporary') ||
+    title.includes('project') ||
+    desc.includes('contractor') ||
+    desc.includes('freelancer') ||
+    desc.includes('temporary contract')
+  ) {
+    return 'Contract'
+  }
+
+  if (
+    title.includes('part-time') ||
+    title.includes('part time') ||
+    title.includes('parttime') ||
+    title.includes('intern') ||
+    desc.includes('part-time') ||
+    desc.includes('internship')
+  ) {
+    return 'Part-time'
+  }
+
+  return 'Full-time'
+}
+
 /** Map a raw API job to the frontend JobMatch shape. */
 export function mapApiJobToJobMatch(job: ApiJob): JobMatch {
   // Build feature bullets from description sentences (max 3)
@@ -141,7 +171,7 @@ export function mapApiJobToJobMatch(job: ApiJob): JobMatch {
     title: job.title,
     company: job.company,
     location: resolveLocation(job.location),
-    jobType: 'Full-time',        // backend doesn't expose this yet
+    jobType: resolveJobType(job),
     matchPct: Math.round(job.match_score),
     iconName: resolveIconName(job),
     features,

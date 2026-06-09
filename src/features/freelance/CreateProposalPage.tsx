@@ -433,7 +433,7 @@ export default function CreateProposalPage() {
             </>
           ) : (
             <>
-              <Send size={15} /> Go to Project and Copy
+              <Send size={15} /> Copy & Go to Project
             </>
           )}
         </button>

@@ -161,3 +161,25 @@ export async function cvUserInteraction(
     aiMessage: data.ai_message,
   }
 }
+
+export interface AtsScoreResponse {
+  feedback: string
+  ats_score: number
+}
+
+/**
+ * Analyzes CV for ATS compatibility.
+ */
+export async function analyzeCvAts(currentCv: CVData): Promise<AtsScoreResponse> {
+  const payload = {
+    cv: cvDataToApiFormat(currentCv),
+  }
+
+  const { data } = await api.post<AtsScoreResponse>(
+    '/API/CV/optimiz/ATS',
+    payload,
+  )
+
+  return data
+}
+
