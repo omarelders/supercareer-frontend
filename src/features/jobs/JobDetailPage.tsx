@@ -199,7 +199,9 @@ export default function JobDetailPage() {
     )
   }
 
-  const techStack = extractTechStack(rawJob.description)
+  const techStack = rawJob.required_skills?.length
+    ? rawJob.required_skills
+    : extractTechStack(rawJob.description)
   const requirements = extractRequirements(rawJob.description)
   const postedAgo = formatPostedDate(rawJob.posted_date || rawJob.scraped_at)
   const salaryRange = guessSalary(rawJob.description)
@@ -330,10 +332,10 @@ export default function JobDetailPage() {
           </section>
         )}
 
-        {/* Technical Stack */}
+        {/* Required Skills */}
         {techStack.length > 0 && (
           <section>
-            <h2 className="text-lg font-bold text-slate-900 mb-3">Technical Stack</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-3">Required Skills</h2>
             <div className="flex flex-wrap gap-2">
               {techStack.map((tech) => (
                 <span

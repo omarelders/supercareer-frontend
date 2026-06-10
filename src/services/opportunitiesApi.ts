@@ -20,14 +20,15 @@ import aiApi from './aiApi'
 export interface ApiJob {
   id: number
   match_score: number
+  required_skills: string[]  // returned by backend as of latest schema
   title: string
   company: string
   description: string
   location: string
   source_platform: string
   source_url: string
-  posted_date: string      // "YYYY-MM-DD"
-  scraped_at: string       // ISO datetime
+  posted_date: string        // "YYYY-MM-DD"
+  scraped_at: string         // ISO datetime
 }
 
 export interface ApiProject {
