@@ -8,7 +8,6 @@
  * (string-keyed objects like "Personal Details", "Experience", etc.)
  * and the frontend CVData shape used by the CV builder components.
  */
-import api from './api'
 import aiApi from './aiApi'
 import type { CVData, Experience, Education } from '@/features/cv-builder/types'
 
