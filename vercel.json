@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/api/opportunities/generate-proposal/", "destination": "http://76.13.55.54:8080/api/opportunities/generate-proposal/" },
+    { "source": "/API/CV/(.*)", "destination": "http://76.13.55.54:8080/API/CV/$1" },
     { "source": "/api/(.*)", "destination": "http://76.13.55.54:8000/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
