@@ -11,6 +11,7 @@
  * automatically attached and refreshed.
  */
 import api from './api'
+import aiApi from './aiApi'
 
 // ---------------------------------------------------------------------------
 // Backend response shapes (snake_case, mirrors the Swagger schema)
@@ -123,8 +124,8 @@ export async function createProposal(
 export async function generateProposal(
   payload: GenerateProposalPayload,
 ): Promise<GenerateProposalResponse> {
-  const { data } = await api.post<GenerateProposalResponse>(
-    '/API/proposel',
+  const { data } = await aiApi.post<GenerateProposalResponse>(
+    '/api/opportunities/generate-proposal/',
     payload,
   )
   return data

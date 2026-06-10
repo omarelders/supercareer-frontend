@@ -9,6 +9,7 @@
  * and the frontend CVData shape used by the CV builder components.
  */
 import api from './api'
+import aiApi from './aiApi'
 import type { CVData, Experience, Education } from '@/features/cv-builder/types'
 
 // ---------------------------------------------------------------------------
@@ -151,7 +152,7 @@ export async function cvUserInteraction(
     user_query: userQuery,
   }
 
-  const { data } = await api.post<CvUserInteractionResponse>(
+  const { data } = await aiApi.post<CvUserInteractionResponse>(
     '/API/CV/optimiz/user_interaction',
     payload,
   )
@@ -175,7 +176,7 @@ export async function analyzeCvAts(currentCv: CVData): Promise<AtsScoreResponse>
     cv: cvDataToApiFormat(currentCv),
   }
 
-  const { data } = await api.post<AtsScoreResponse>(
+  const { data } = await aiApi.post<AtsScoreResponse>(
     '/API/CV/optimiz/ATS',
     payload,
   )
