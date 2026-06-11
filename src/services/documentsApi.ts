@@ -13,6 +13,7 @@
  */
 import api from './api'
 import type { CVData } from '@/features/cv-builder/types'
+import { cvDataToApiFormat, type ApiCV } from './cvAiApi'
 
 // ---------------------------------------------------------------------------
 // Backend response shapes (snake_case, mirrors the Swagger schema)
@@ -236,6 +237,23 @@ export async function updateCustomCVBase(id: number): Promise<DbCV[]> {
 export async function renameCustomCV(id: number, newTitle: string): Promise<DbCV[]> {
   await patchCvDocument(id, { professional_title: newTitle })
   return getCustomCVs()
+}
+
+// ---------------------------------------------------------------------------
+// Base CV operations
+// ---------------------------------------------------------------------------
+
+/** Retrieve the Base CV. */
+export async function getBaseCv(): Promise<DbCV> {
+  const { data } = await api.get<DbCV>('/api/documents/cv/base/update/')
+  return data
+}
+
+/** Update the Base CV using the Custom CV Schema. */
+export async function saveBaseCv(cvData: CVData): Promise<DbCV> {
+  const payload = cvDataToApiFormat(cvData)
+  const { data } = await api.put<DbCV>('/api/documents/cv/base/update/', payload)
+  return data
 }
 
 // ---------------------------------------------------------------------------

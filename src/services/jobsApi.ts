@@ -1,3 +1,5 @@
+import api from './api'
+import { cvDataToApiFormat } from './cvAiApi'
 import { fetchJobs, type ApiJob } from './opportunitiesApi'
 import type { CVData } from '@/features/cv-builder/types'
 import {
@@ -206,6 +208,8 @@ export async function getCvContent(id: number): Promise<CVData> {
 }
 
 export async function saveCvContent(id: number, data: CVData): Promise<void> {
-  await patchCvDocument(id, cvDataToDbCv(data))
+  const payload = cvDataToApiFormat(data)
+  // Send the Custom CV Schema (ApiCV) instead of flat DbCV
+  await api.patch(`/api/documents/cv/${id}/`, payload)
 }
 
