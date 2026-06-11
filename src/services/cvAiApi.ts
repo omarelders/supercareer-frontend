@@ -58,6 +58,10 @@ export interface CvUserInteractionResponse {
   ai_message: string
 }
 
+export interface BuildCvResponse {
+  cv_schema: ApiCV
+}
+
 // ---------------------------------------------------------------------------
 // Mapping: CVData (frontend) → ApiCV (backend)
 // ---------------------------------------------------------------------------
@@ -183,6 +187,28 @@ export async function cvUserInteraction(
   }
 }
 
+export async function buildCvFromOldResume(
+  fileBase64: string,
+  fileName: string,
+): Promise<CVData> {
+  const payload = {
+    file_base64: fileBase64,
+    file_name: fileName,
+  }
+
+  const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/old_cv', payload)
+  return apiFormatToCvData(data.cv_schema)
+}
+
+export async function buildCvFromProfile(userId: number): Promise<CVData> {
+  const payload = {
+    user_id: userId,
+  }
+
+  const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/Profile_cv', payload)
+  return apiFormatToCvData(data.cv_schema)
+}
+
 export interface AtsScoreResponse {
   feedback: string
   ats_score: number
@@ -223,4 +249,3 @@ export async function recommendKeywords(currentCv: CVData): Promise<string[]> {
 
   return data.recommended_keywords
 }
-
