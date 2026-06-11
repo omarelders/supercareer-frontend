@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -9,19 +9,44 @@ import {
   Paper,
   ActionIcon,
   Badge,
+  Loader,
+  Alert,
 } from '@mantine/core';
-import { Search, X, Zap, Plus } from 'lucide-react';
+import { Search, X, Zap, Plus, AlertCircle, RefreshCw } from 'lucide-react';
 import type { CVData } from '../types';
+import { recommendKeywords } from '@/services/cvAiApi';
 
 interface SkillsFormProps {
   data: CVData['skills'];
+  cvData: CVData;
   onChange: (data: CVData['skills']) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function SkillsForm({ data, onChange, onNext, onBack }: SkillsFormProps) {
+export function SkillsForm({ data, cvData, onChange, onNext, onBack }: SkillsFormProps) {
   const [inputValue, setInputValue] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+
+  const fetchSuggestions = async () => {
+    setLoadingSuggestions(true);
+    setSuggestionsError(null);
+    try {
+      const keywords = await recommendKeywords(cvData);
+      setSuggestions(keywords);
+    } catch {
+      setSuggestionsError('Failed to load AI keyword suggestions. Please try again.');
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuggestions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddSkill = () => {
     if (inputValue.trim() && !data.includes(inputValue.trim())) {
@@ -107,51 +132,88 @@ export function SkillsForm({ data, onChange, onNext, onBack }: SkillsFormProps) 
               AI Recommended Keywords
             </Text>
           </Group>
-          <Badge
-            color="gray"
-            variant="light"
-            size="lg"
-            radius="xl"
-            style={{ textTransform: 'none' }}
-          >
-            Target: Senior Frontend Engineer
-          </Badge>
+          {!loadingSuggestions && !suggestionsError && suggestions.length > 0 && (
+            <Badge
+              color="green"
+              variant="light"
+              size="lg"
+              radius="xl"
+              style={{ textTransform: 'none' }}
+            >
+              {suggestions.length} keywords found
+            </Badge>
+          )}
         </Group>
 
         <Text size="sm" c="#475569" mb="xl">
-          Our AI scanned 500+ similar job postings. Adding these keywords will increase your
-          visibility to top recruiters:
+          Our AI analyzed your CV and suggests these ATS keywords to boost your visibility to top
+          recruiters:
         </Text>
 
-        <Stack gap="md">
-          {[
-            'State Management (Redux/Zustand)',
-            'Responsive Web Design',
-            'Unit Testing (Jest/Cypress)',
-            'Performance Optimization',
-          ].map((suggestion) => (
-            <Paper key={suggestion} p="md" radius="md" withBorder bg="#F8FAFC">
-              <Group justify="space-between">
-                <Group gap="sm">
-                  <Zap size={18} color="#10B981" />
-                  <Text fw={700} size="sm" c="#334155" ff="Manrope">
-                    {suggestion}
-                  </Text>
+        {loadingSuggestions && (
+          <Group justify="center" py="xl">
+            <Loader size="md" color="#10B981" />
+            <Text size="sm" c="#475569">
+              Analyzing your CV for keyword recommendations…
+            </Text>
+          </Group>
+        )}
+
+        {suggestionsError && (
+          <Alert
+            icon={<AlertCircle size={16} />}
+            color="red"
+            variant="light"
+            radius="md"
+            mb="md"
+            title="Could not load suggestions"
+          >
+            {suggestionsError}
+            <Button
+              mt="sm"
+              size="xs"
+              variant="subtle"
+              color="red"
+              leftSection={<RefreshCw size={14} />}
+              onClick={fetchSuggestions}
+            >
+              Retry
+            </Button>
+          </Alert>
+        )}
+
+        {!loadingSuggestions && !suggestionsError && suggestions.length === 0 && (
+          <Text size="sm" c="#94A3B8" ta="center" py="md">
+            No keyword suggestions available. Fill in more CV details to get better results.
+          </Text>
+        )}
+
+        {!loadingSuggestions && suggestions.length > 0 && (
+          <Stack gap="md">
+            {suggestions.map((suggestion) => (
+              <Paper key={suggestion} p="md" radius="md" withBorder bg="#F8FAFC">
+                <Group justify="space-between">
+                  <Group gap="sm">
+                    <Zap size={18} color="#10B981" />
+                    <Text fw={700} size="sm" c="#334155" ff="Manrope">
+                      {suggestion}
+                    </Text>
+                  </Group>
+                  <Button
+                    variant="subtle"
+                    color="#10B981"
+                    size="xs"
+                    leftSection={<Plus size={14} />}
+                    onClick={() => addSuggestedSkill(suggestion)}
+                    disabled={data.includes(suggestion)}
+                  >
+                    {data.includes(suggestion) ? 'Added' : 'Add Skill'}
+                  </Button>
                 </Group>
-                <Button
-                  variant="subtle"
-                  color="#10B981"
-                  size="xs"
-                  leftSection={<Plus size={14} />}
-                  onClick={() => addSuggestedSkill(suggestion)}
-                  disabled={data.includes(suggestion)}
-                >
-                  Add Skill
-                </Button>
-              </Group>
-            </Paper>
-          ))}
-        </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        )}
       </Paper>
 
       <Group justify="space-between" mt="xl">

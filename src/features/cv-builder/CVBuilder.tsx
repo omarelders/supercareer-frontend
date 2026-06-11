@@ -134,6 +134,7 @@ export function CVBuilder() {
           {step === 4 && (
             <SkillsForm
               data={cvData.skills}
+              cvData={cvData}
               onChange={(skills) => setCvData({ ...cvData, skills })}
               onNext={() => setStep(5)}
               onBack={() => setStep(3)}

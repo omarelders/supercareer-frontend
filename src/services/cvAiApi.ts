@@ -183,3 +183,23 @@ export async function analyzeCvAts(currentCv: CVData): Promise<AtsScoreResponse>
   return data
 }
 
+export interface RecommendKeywordsResponse {
+  recommended_keywords: string[]
+}
+
+/**
+ * Suggests ATS keywords based on the current CV content.
+ */
+export async function recommendKeywords(currentCv: CVData): Promise<string[]> {
+  const payload = {
+    cv_so_far: cvDataToApiFormat(currentCv),
+  }
+
+  const { data } = await aiApi.post<RecommendKeywordsResponse>(
+    '/API/CV/AI_Recommended_Keywords',
+    payload,
+  )
+
+  return data.recommended_keywords
+}
+
