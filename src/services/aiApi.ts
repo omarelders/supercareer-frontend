@@ -21,4 +21,16 @@ const aiApi = axios.create({
   },
 })
 
+// Attach access token to AI requests in case the backend/gateway requires it for external traffic
+aiApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
 export default aiApi
