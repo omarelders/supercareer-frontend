@@ -12,6 +12,7 @@
  * are automatically attached and silently refreshed on 401.
  */
 import api from './api'
+import type { CVData } from '@/features/cv-builder/types'
 
 // ---------------------------------------------------------------------------
 // Backend response shapes (snake_case, mirrors the Swagger schema)
@@ -64,29 +65,168 @@ export interface DocApiProposal {
 }
 
 // ---------------------------------------------------------------------------
-// CV document types
+// CV API
 // ---------------------------------------------------------------------------
 
-/** Payload for POST /api/documents/cv/create/ */
-export interface CreateCvPayload {
-  /** Serialised CV content (plain text, JSON, or Markdown). */
-  content: string
-  /** ATS score computed locally (0-100). */
-  ats_score: number
-  /** Owning user id – backend will also derive this from the JWT. */
-  user: number
-  /** Optional job id the CV was tailored for. */
-  job?: number | null
+export interface DbExperience {
+  is_current: boolean
+  job_title: string
+  company: string
+  start_date: string
+  end_date: string
+  description: string
 }
 
-/** Response from POST /api/documents/cv/create/ */
-export interface ApiCvDocument {
+export interface DbEducation {
+  school: string
+  degree: string
+  graduation_year: string
+  description: string
+}
+
+export interface DbCV {
   id: number
-  content: string
-  ats_score: number
-  created_at: string
   user: number
   job: number | null
+  full_name: string
+  phone_number: string
+  professional_title: string
+  email_address: string
+  location: string
+  portfolio_url: string
+  professional_summary: string
+  content: string
+  ats_score: number
+  is_base: boolean
+  Experience: DbExperience[]
+  Education: DbEducation[]
+  Skills: string[]
+  created_at: string
+}
+
+/** Mapping function from database CV shape to frontend CVData shape. */
+export function dbCvToCvData(dbCv: DbCV): CVData {
+  return {
+    personal: {
+      fullName: dbCv.full_name || '',
+      title: dbCv.professional_title || '',
+      email: dbCv.email_address || '',
+      phone: dbCv.phone_number || '',
+      location: dbCv.location || '',
+      url: dbCv.portfolio_url || '',
+      summary: dbCv.professional_summary || '',
+    },
+    experience: (dbCv.Experience || []).map((exp, idx) => ({
+      id: String(idx + 1),
+      title: exp.job_title || '',
+      company: exp.company || '',
+      startDate: exp.start_date || '',
+      endDate: exp.end_date || '',
+      current: exp.is_current || false,
+      description: exp.description || '',
+    })),
+    education: (dbCv.Education || []).map((edu, idx) => ({
+      id: String(idx + 1),
+      school: edu.school || '',
+      degree: edu.degree || '',
+      year: edu.graduation_year || '',
+      description: edu.description || '',
+    })),
+    skills: dbCv.Skills || [],
+  }
+}
+
+/** Mapping function from frontend CVData shape to database CV shape for saving. */
+export function cvDataToDbCv(data: CVData): Partial<DbCV> {
+  return {
+    full_name: data.personal.fullName,
+    professional_title: data.personal.title,
+    email_address: data.personal.email,
+    phone_number: data.personal.phone,
+    location: data.personal.location,
+    portfolio_url: data.personal.url,
+    professional_summary: data.personal.summary,
+    Experience: data.experience.map((exp) => ({
+      job_title: exp.title,
+      company: exp.company,
+      start_date: exp.startDate,
+      end_date: exp.endDate,
+      is_current: exp.current,
+      description: exp.description,
+    })),
+    Education: data.education.map((edu) => ({
+      school: edu.school,
+      degree: edu.degree,
+      graduation_year: edu.year,
+      description: edu.description,
+    })),
+    Skills: data.skills,
+  }
+}
+
+/** Retrieve all custom CVs from the backend. */
+export async function getCustomCVs(): Promise<DbCV[]> {
+  const { data } = await api.get<DbCV[]>('/api/documents/cv/')
+  console.log("RAW API RESPONSE FROM BACKEND (/api/documents/cv/):", data)
+  return data
+}
+
+/** Retrieve a specific CV by ID. */
+export async function getCvDocumentById(id: number): Promise<DbCV> {
+  const { data } = await api.get<DbCV>(`/api/documents/cv/${id}/`)
+  return data
+}
+
+/** Persist a built CV to the backend (regular CV). */
+export async function createCvDocument(
+  payload: Partial<DbCV>,
+): Promise<DbCV> {
+  const { data } = await api.post<DbCV>(
+    '/api/documents/cv/',
+    payload,
+  )
+  return data
+}
+
+/** Update a specific CV by ID. */
+export async function updateCvDocument(
+  id: number,
+  payload: Partial<DbCV>,
+): Promise<DbCV> {
+  const { data } = await api.put<DbCV>(
+    `/api/documents/cv/${id}/`,
+    payload,
+  )
+  return data
+}
+
+/** Partially update a specific CV (e.g. for setting base status or renaming). */
+export async function patchCvDocument(
+  id: number,
+  payload: Partial<DbCV>,
+): Promise<DbCV> {
+  const { data } = await api.patch<DbCV>(
+    `/api/documents/cv/${id}/`,
+    payload,
+  )
+  return data
+}
+
+/** Delete a specific CV. */
+export async function deleteCustomCV(id: number): Promise<void> {
+  await api.delete(`/api/documents/cv/${id}/`)
+}
+
+/** Mark a specific CV as Base CV. */
+export async function updateCustomCVBase(id: number): Promise<DbCV[]> {
+  await patchCvDocument(id, { is_base: true })
+  return getCustomCVs()
+}
+
+/** Rename a specific CV's title. */
+export async function renameCustomCV(id: number, newTitle: string): Promise<DbCV[]> {
+  await patchCvDocument(id, { professional_title: newTitle })
+  return getCustomCVs()
 }
 
 // ---------------------------------------------------------------------------
@@ -104,25 +244,6 @@ export interface UpdateProposalPayload {
 /** Payload for PATCH /api/documents/proposals/{id}/ (partial update). */
 export type PatchProposalPayload = Partial<UpdateProposalPayload>
 
-// ---------------------------------------------------------------------------
-// CV API
-// ---------------------------------------------------------------------------
-
-/**
- * Persist a built CV to the backend.
- *
- * The backend derives the user from the JWT, so `user` is technically
- * redundant but required by the current schema.
- */
-export async function createCvDocument(
-  payload: CreateCvPayload,
-): Promise<ApiCvDocument> {
-  const { data } = await api.post<ApiCvDocument>(
-    '/api/documents/cv/create/',
-    payload,
-  )
-  return data
-}
 
 // ---------------------------------------------------------------------------
 // Proposals API

@@ -11,19 +11,21 @@
  */
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
-import { createCvDocument, type ApiCvDocument, type CreateCvPayload } from '@/services/documentsApi'
+import { createCvDocument, type DbCV, cvDataToDbCv } from '@/services/documentsApi'
+import type { CVData } from '@/features/cv-builder/types'
 
 // ---------------------------------------------------------------------------
 // Thunk
 // ---------------------------------------------------------------------------
 
 export const saveCvDocument = createAsyncThunk<
-  ApiCvDocument,
-  CreateCvPayload,
+  DbCV,
+  CVData,
   { rejectValue: string }
 >('cvDocument/save', async (payload, { rejectWithValue }) => {
   try {
-    return await createCvDocument(payload)
+    const apiPayload = cvDataToDbCv(payload)
+    return await createCvDocument(apiPayload)
   } catch {
     return rejectWithValue('Failed to save CV. Please try again.')
   }
@@ -35,7 +37,7 @@ export const saveCvDocument = createAsyncThunk<
 
 interface CvDocumentState {
   isSaving: boolean
-  lastSaved: ApiCvDocument | null
+  lastSaved: DbCV | null
   error: string | null
 }
 

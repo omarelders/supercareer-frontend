@@ -66,14 +66,17 @@ export default function CvEditPage() {
 
       // 1. Try to load previously saved content for this CV id
       const numericId = Number(id)
-      const stored = getCvContent(numericId)
-
-      if (stored) {
-        if (!cancelled) {
-          setCvData(stored)
-          setIsDataLoading(false)
+      try {
+        const stored = await getCvContent(numericId)
+        if (stored) {
+          if (!cancelled) {
+            setCvData(stored)
+            setIsDataLoading(false)
+          }
+          return
         }
-        return
+      } catch (err) {
+        console.error('Failed to load CV content:', err)
       }
 
       // 2. No saved content yet — prefill name/title from profile API
@@ -128,10 +131,13 @@ export default function CvEditPage() {
     setIsSaving(true)
     try {
       if (id) {
-        saveCvContent(Number(id), cvData)
+        await saveCvContent(Number(id), cvData)
       }
       setSaved(true)
       setTimeout(() => navigate(-1), 600)
+    } catch (err) {
+      console.error('Failed to save CV changes:', err)
+      alert('Failed to save changes. Please try again.')
     } finally {
       setIsSaving(false)
     }

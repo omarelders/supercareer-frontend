@@ -16,7 +16,7 @@ import type { CVData } from '../types';
 import { generatePDFFromCV } from '../utils/pdfGenerator';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { saveCvDocument, selectCvDocumentState } from '@/store/slices/cvDocumentSlice';
-import { selectUser } from '@/store/slices/authSlice';
+
 import { analyzeCvAts } from '@/services/cvAiApi';
 
 interface ATSScoreProps {
@@ -25,7 +25,7 @@ interface ATSScoreProps {
 
 export function ATSScore({ data }: ATSScoreProps) {
   const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUser);
+
   const { isSaving, lastSaved, error: saveError } = useAppSelector(selectCvDocumentState);
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -70,27 +70,13 @@ export function ATSScore({ data }: ATSScoreProps) {
   };
 
   /**
-   * Serialize CVData to JSON, compute a simple ATS score heuristic,
-   * and POST to /api/documents/cv/create/.
+   * Dispatches saveCvDocument to persist the generated CV to the database.
    */
   const handleSaveDraft = async () => {
     if (isSaving) return;
     setSaveSuccess(false);
 
-    // Derive user id from auth state (stored as { id: number, ... })
-    const userId = typeof user?.id === 'number' ? user.id : 0;
-
-    // Simple ATS heuristic fallback
-    const finalAtsScore = atsScore ?? Math.min(100, 60 + Math.min(40, data.skills.length * 4));
-
-    const result = await dispatch(
-      saveCvDocument({
-        content: JSON.stringify(data),
-        ats_score: finalAtsScore,
-        user: userId,
-        job: null,
-      })
-    );
+    const result = await dispatch(saveCvDocument(data));
 
     if (saveCvDocument.fulfilled.match(result)) {
       setSaveSuccess(true);

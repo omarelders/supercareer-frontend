@@ -74,13 +74,17 @@ export default function CvAiEditPage() {
         const numericId = Number(id)
 
         // 1. Try to load previously saved full CV content
-        const stored = getCvContent(numericId)
-        if (stored) {
-          if (!cancelled) {
-            setCvData(stored)
-            setCvLoading(false)
+        try {
+          const stored = await getCvContent(numericId)
+          if (stored) {
+            if (!cancelled) {
+              setCvData(stored)
+              setCvLoading(false)
+            }
+            return
           }
-          return
+        } catch (err) {
+          console.error('Failed to load CV content from backend:', err)
         }
 
         // 2. No saved content — fall back to profile defaults
@@ -143,7 +147,7 @@ export default function CvAiEditPage() {
             personal: {
               ...prev.personal,
               fullName: profileName || prev.personal.fullName,
-              title: profileTitle || prev.personal.title || found.title,
+              title: profileTitle || prev.personal.title || found.professional_title,
             },
           }))
           setCvLoading(false)
@@ -200,7 +204,7 @@ export default function CvAiEditPage() {
       setCvData(updatedCv)
       // Persist the AI-updated CV so "Edit Manually" sees the latest version
       if (id) {
-        saveCvContent(Number(id), updatedCv)
+        await saveCvContent(Number(id), updatedCv)
       }
 
       const assistantMsg: Message = {

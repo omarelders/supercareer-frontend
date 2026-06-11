@@ -11,7 +11,6 @@
  * automatically attached and refreshed.
  */
 import api from './api'
-import aiApi from './aiApi'
 
 // ---------------------------------------------------------------------------
 // Backend response shapes (snake_case, mirrors the Swagger schema)
@@ -53,12 +52,11 @@ export interface ProjectsRefreshResponse {
 }
 
 export interface GenerateProposalPayload {
-  user_profile: string
-  project_details: string
+  project_id: number
 }
 
 export interface GenerateProposalResponse {
-  proposal_text: string
+  proposal: string
 }
 
 export type ProposalStatus = 'sent' | 'draft' | 'accepted' | 'rejected' | 'in_review'
@@ -125,8 +123,8 @@ export async function createProposal(
 export async function generateProposal(
   payload: GenerateProposalPayload,
 ): Promise<GenerateProposalResponse> {
-  const { data } = await aiApi.post<GenerateProposalResponse>(
-    '/api/opportunities/generate-proposal/',
+  const { data } = await api.post<GenerateProposalResponse>(
+    '/api/matching/generate-proposal/',
     payload,
   )
   return data

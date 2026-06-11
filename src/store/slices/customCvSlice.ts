@@ -1,6 +1,19 @@
 import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
 import { getCustomCVs, deleteCustomCV, updateCustomCVBase, renameCustomCV, type CustomCV } from '@/services/jobsApi'
+import type { DbCV } from '@/services/documentsApi'
+
+export function mapDbCvToCustomCv(dbCv: DbCV): CustomCV {
+  const d = new Date(dbCv.created_at)
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return {
+    id: dbCv.id,
+    date: dateStr,
+    title: dbCv.professional_title || dbCv.full_name || 'Untitled CV',
+    appliedTo: dbCv.job ? `Job Matching (ID #${dbCv.job})` : 'General Application',
+    base_cv: dbCv.is_base,
+  }
+}
 
 const CUSTOM_CV_PAGE_SIZE = 5
 
@@ -24,7 +37,8 @@ export const fetchCustomCVs = createAsyncThunk<
   { rejectValue: string }
 >('customCv/fetchCustomCVs', async (_, { rejectWithValue }) => {
   try {
-    return await getCustomCVs()
+    const data = await getCustomCVs()
+    return data.map(mapDbCvToCustomCv)
   } catch {
     return rejectWithValue('Failed to load CVs.')
   }
@@ -34,11 +48,12 @@ export const deleteCV = createAsyncThunk<
   number,
   number,
   { rejectValue: string }
->('customCv/deleteCV', async (id, { rejectWithValue }) => {
+>('customCv/deleteCV', async (id, { rejectWithValue, dispatch }) => {
   try {
     await deleteCustomCV(id)
     return id
   } catch {
+    dispatch(fetchCustomCVs())
     return rejectWithValue('Failed to delete CV.')
   }
 })
@@ -47,10 +62,12 @@ export const makeBaseCv = createAsyncThunk<
   CustomCV[],
   number,
   { rejectValue: string }
->('customCv/makeBaseCv', async (id, { rejectWithValue }) => {
+>('customCv/makeBaseCv', async (id, { rejectWithValue, dispatch }) => {
   try {
-    return await updateCustomCVBase(id)
+    const data = await updateCustomCVBase(id)
+    return data.map(mapDbCvToCustomCv)
   } catch {
+    dispatch(fetchCustomCVs())
     return rejectWithValue('Failed to update base CV.')
   }
 })
@@ -59,10 +76,12 @@ export const renameCV = createAsyncThunk<
   CustomCV[],
   { id: number; newTitle: string },
   { rejectValue: string }
->('customCv/renameCV', async ({ id, newTitle }, { rejectWithValue }) => {
+>('customCv/renameCV', async ({ id, newTitle }, { rejectWithValue, dispatch }) => {
   try {
-    return await renameCustomCV(id, newTitle)
+    const data = await renameCustomCV(id, newTitle)
+    return data.map(mapDbCvToCustomCv)
   } catch {
+    dispatch(fetchCustomCVs())
     return rejectWithValue('Failed to rename CV.')
   }
 })
@@ -95,10 +114,21 @@ const customCvSlice = createSlice({
         }
         state.error = action.payload ?? 'Failed to load CVs.'
       })
-      .addCase(deleteCV.fulfilled, (state, action) => {
-        state.items = state.items.filter((cv) => cv.id !== action.payload)
+      .addCase(deleteCV.pending, (state, action) => {
+        state.items = state.items.filter((cv) => cv.id !== action.meta.arg)
         const totalPages = Math.max(1, Math.ceil(state.items.length / CUSTOM_CV_PAGE_SIZE))
         state.currentPage = Math.min(state.currentPage, totalPages)
+      })
+      .addCase(makeBaseCv.pending, (state, action) => {
+        state.items.forEach(cv => {
+          cv.base_cv = cv.id === action.meta.arg
+        })
+      })
+      .addCase(renameCV.pending, (state, action) => {
+        const item = state.items.find(cv => cv.id === action.meta.arg.id)
+        if (item) {
+          item.title = action.meta.arg.newTitle
+        }
       })
       .addCase(makeBaseCv.fulfilled, (state, action) => {
         state.items = action.payload

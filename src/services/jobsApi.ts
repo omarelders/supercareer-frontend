@@ -1,5 +1,16 @@
 import { fetchJobs, type ApiJob } from './opportunitiesApi'
 import type { CVData } from '@/features/cv-builder/types'
+import {
+  getCustomCVs,
+  deleteCustomCV,
+  updateCustomCVBase,
+  renameCustomCV,
+  getCvDocumentById,
+  updateCvDocument,
+  patchCvDocument,
+  dbCvToCvData,
+  cvDataToDbCv,
+} from './documentsApi'
 
 
 
@@ -54,36 +65,7 @@ export interface CustomCV {
 
 
 
-function getRecentDate(daysAgo: number): string {
-  const d = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
-const MOCK_CUSTOM_CVS: CustomCV[] = [
-  ...Array.from({ length: 4 }).flatMap((_, i) => [
-    { id: i * 6 + 1, date: getRecentDate(i * 30 + 1), title: 'Senior Frontend Developer CV', appliedTo: 'TechCorp International', base_cv: i === 0 } as CustomCV,
-    { id: i * 6 + 2, date: getRecentDate(i * 30 + 5), title: 'UX Designer - FinTech Specialist', appliedTo: 'NeoBank Systems', base_cv: false } as CustomCV,
-    { id: i * 6 + 3, date: getRecentDate(i * 30 + 10), title: 'Full Stack Engineer (Node.js)', appliedTo: 'WebFlow Studios', base_cv: false } as CustomCV,
-    { id: i * 6 + 4, date: getRecentDate(i * 30 + 15), title: 'Product Manager Role - Tech Startup', appliedTo: 'Launchpad AI', base_cv: false } as CustomCV,
-    { id: i * 6 + 5, date: getRecentDate(i * 30 + 20), title: 'Frontend Engineer - Creative Focus', appliedTo: 'Designly Agency', base_cv: false } as CustomCV,
-    { id: i * 6 + 6, date: getRecentDate(i * 30 + 25), title: 'React Native Developer', appliedTo: 'MobileFirst', base_cv: false } as CustomCV,
-  ])
-]
-
-const CUSTOM_CVS_STORAGE_KEY = 'supercareer_custom_cvs_v2'
-
-function getStoredCVs(): CustomCV[] {
-  const stored = localStorage.getItem(CUSTOM_CVS_STORAGE_KEY)
-  if (!stored) {
-    localStorage.setItem(CUSTOM_CVS_STORAGE_KEY, JSON.stringify(MOCK_CUSTOM_CVS))
-    return MOCK_CUSTOM_CVS
-  }
-  return JSON.parse(stored)
-}
-
-function saveStoredCVs(cvs: CustomCV[]) {
-  localStorage.setItem(CUSTOM_CVS_STORAGE_KEY, JSON.stringify(cvs))
-}
 
 // Icon heuristic: pick an icon based on the job's source platform or title keywords
 const PLATFORM_ICON_MAP: Record<string, JobIconName> = {
@@ -217,60 +199,14 @@ export async function getJobMatches(
   }
 }
 
-export async function getCustomCVs(): Promise<CustomCV[]> {
-  return getStoredCVs()
+export { getCustomCVs, deleteCustomCV, updateCustomCVBase, renameCustomCV }
+
+export async function getCvContent(id: number): Promise<CVData> {
+  const dbCv = await getCvDocumentById(id)
+  return dbCvToCvData(dbCv)
 }
 
-export async function deleteCustomCV(id: number): Promise<void> {
-  const cvs = getStoredCVs()
-  saveStoredCVs(cvs.filter((cv) => cv.id !== id))
-}
-
-export async function updateCustomCVBase(id: number): Promise<CustomCV[]> {
-  const cvs = getStoredCVs().map((cv) => ({
-    ...cv,
-    base_cv: cv.id === id,
-  }))
-  saveStoredCVs(cvs)
-  return cvs
-}
-
-export async function renameCustomCV(id: number, newTitle: string): Promise<CustomCV[]> {
-  const cvs = getStoredCVs().map((cv) => (cv.id === id ? { ...cv, title: newTitle } : cv))
-  saveStoredCVs(cvs)
-  return cvs
-}
-
-// ---------------------------------------------------------------------------
-// CV Content Storage (full CVData per CV id, stored separately)
-// ---------------------------------------------------------------------------
-
-const CV_CONTENT_STORAGE_KEY = 'supercareer_cv_content_v1'
-
-function getAllCvContents(): Record<number, CVData> {
-  const stored = localStorage.getItem(CV_CONTENT_STORAGE_KEY)
-  if (!stored) return {}
-  try {
-    return JSON.parse(stored)
-  } catch {
-    return {}
-  }
-}
-
-/**
- * Returns the stored CVData for a given CV id, or null if none has been saved yet.
- */
-export function getCvContent(id: number): CVData | null {
-  const all = getAllCvContents()
-  return all[id] ?? null
-}
-
-/**
- * Persists the full CVData for a given CV id to localStorage.
- */
-export function saveCvContent(id: number, data: CVData): void {
-  const all = getAllCvContents()
-  all[id] = data
-  localStorage.setItem(CV_CONTENT_STORAGE_KEY, JSON.stringify(all))
+export async function saveCvContent(id: number, data: CVData): Promise<void> {
+  await patchCvDocument(id, cvDataToDbCv(data))
 }
 

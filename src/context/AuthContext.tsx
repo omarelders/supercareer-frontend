@@ -1,27 +1,20 @@
 /* eslint-disable react-refresh/only-export-components */
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import api, { setForceLogoutHandler } from '@/services/api'
-import { googleLogin as apiGoogleLogin, googleRegister as apiGoogleRegister } from '@/services/googleAuthApi'
-import { store } from '@/store/store'
-import { login as reduxLogin, logout as reduxLogout } from '@/store/slices/authSlice'
-
-export interface AuthUser {
-  id?: number | string
-  email?: string
-  username?: string
-  full_name?: string
-  role?: string
-  avatar?: string
-  [key: string]: unknown
-}
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { setForceLogoutHandler } from '@/services/api'
+import { 
+  initializeAuth, 
+  loginThunk, 
+  googleAuthThunk, 
+  logoutThunk, 
+  updateUser, 
+  forceLogoutAction,
+  selectIsAuthenticated, 
+  selectUser, 
+  selectLoading, 
+  type AuthUser 
+} from '@/store/slices/authSlice'
+import type { AppDispatch } from '@/store/store'
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -29,217 +22,43 @@ interface AuthContextValue {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  googleAuth: (params: {
-    id_token: string
-    role?: string
-    register?: boolean
-  }) => Promise<void>
+  googleAuth: (params: { id_token: string, role?: string, register?: boolean }) => Promise<void>
   updateUser: (updates: Partial<AuthUser>) => void
-}
-
-// Typing based on the exact shape returned by the backend
-interface LoginResponse {
-  tokens: {
-    access: string
-    refresh: string
-  }
-  user: AuthUser
-}
-
-/** Decode a JWT payload without any library – returns null on any failure. */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split('.')[1]
-    const json = atob(base64.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(json) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
-
-/** Returns true if the token is missing or its exp is in the past. */
-function isTokenExpired(token: string | null): boolean {
-  if (!token) return true
-  const payload = decodeJwtPayload(token)
-  if (!payload || typeof payload.exp !== 'number') return true
-  // exp is in seconds; add a 10-second clock-skew buffer
-  return payload.exp * 1000 < Date.now() + 10_000
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try {
-      const stored = localStorage.getItem('user')
-      return stored ? (JSON.parse(stored) as AuthUser) : null
-    } catch {
-      return null
-    }
-  })
-
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
-
-  // loading = true until we've finished the startup token check.
-  // ProtectedRoute waits on this before deciding to render or redirect.
-  const [loading, setLoading] = useState<boolean>(true)
-
+  const dispatch = useDispatch<AppDispatch>()
+  const user = useSelector(selectUser)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const loading = useSelector(selectLoading)
 
   useEffect(() => {
-    const access = localStorage.getItem('access')
-    const refresh = localStorage.getItem('refresh')
+    dispatch(initializeAuth())
 
-    if (!isTokenExpired(access)) {
-      // Valid access token → restore session
-      api.defaults.headers.common['Authorization'] = `Bearer ${access!}`
-      setIsAuthenticated(true)
-    } else if (!isTokenExpired(refresh)) {
-      // Access expired but refresh is still valid → will be refreshed on
-      // next API call by the response interceptor; treat as authenticated
-      // so we don't flash the login screen.
-      setIsAuthenticated(true)
-    } else {
-      // Both expired or missing → clear stale data so the 401 race
-      // can never happen (nothing to send to the backend).
-      localStorage.removeItem('access')
-      localStorage.removeItem('refresh')
-      localStorage.removeItem('user')
-      delete api.defaults.headers.common['Authorization']
-      setUser(null)
-      setIsAuthenticated(false)
-    }
-
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
     setForceLogoutHandler(() => {
-      localStorage.removeItem('access')
-      localStorage.removeItem('refresh')
-      localStorage.removeItem('user')
-      delete api.defaults.headers.common['Authorization']
-      store.dispatch(reduxLogout())
-      setUser(null)
-      setIsAuthenticated(false)
+      dispatch(forceLogoutAction())
     })
-  }, [])
+  }, [dispatch])
 
-  const persistSession = useCallback(
-    (access: string, refresh: string, userData: AuthUser) => {
-      // 1. Persist to localStorage (synchronous)
-      localStorage.setItem('access', access)
-      localStorage.setItem('refresh', refresh)
-      localStorage.setItem('user', JSON.stringify(userData))
-
-      // 2. Set the in-memory default header on the Axios instance so that
-      //    any request fired during React's batched re-render already has
-      //    the token — this is the key fix for the race condition.
-      api.defaults.headers.common['Authorization'] = `Bearer ${access}`
-
-      // 3. Sync Redux store immediately (outside React render cycle)
-      //    so that selectors like selectUser return the correct user at once.
-      store.dispatch(reduxLogin(userData as Record<string, unknown>))
-
-      // 4. THEN update React state (batched by React 18)
-      setUser(userData)
-      setIsAuthenticated(true)
+  const value: AuthContextValue = {
+    user,
+    loading,
+    isAuthenticated,
+    login: async (email, password) => {
+      await dispatch(loginThunk({ email, password })).unwrap()
     },
-    [],
-  )
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const { data } = await api.post('/api/login/', { email, password })
-
-      const responseData = data as LoginResponse
-      const access = responseData.tokens.access
-      const refresh = responseData.tokens.refresh
-      const userData = responseData.user
-
-      if (!access || !refresh) {
-        throw new Error(
-          'Missing access/refresh tokens. Backend returned: ' + JSON.stringify(responseData)
-        )
-      }
-
-      persistSession(access, refresh, userData ?? { email })
+    logout: async () => {
+      await dispatch(logoutThunk()).unwrap()
     },
-    [persistSession],
-  )
-
-  const googleAuth = useCallback(
-    async ({
-      id_token,
-      role,
-      register = false,
-    }: {
-      id_token: string
-      role?: string
-      register?: boolean
-    }) => {
-      const response = register
-        ? await apiGoogleRegister(id_token, role ?? 'job_seeker')
-        : await apiGoogleLogin(id_token, role)
-
-      const responseData = response as unknown as LoginResponse
-      const access = responseData.tokens.access
-      const refresh = responseData.tokens.refresh
-      const userData = responseData.user
-
-      if (!access || !refresh) {
-        throw new Error(
-          'Google auth response is missing access or refresh tokens.',
-        )
-      }
-
-      persistSession(access, refresh, (userData as AuthUser) ?? {})
+    googleAuth: async (params) => {
+      await dispatch(googleAuthThunk(params)).unwrap()
     },
-    [persistSession],
-  )
-
-  const logout = useCallback(async () => {
-    const refresh = localStorage.getItem('refresh')
-    try {
-      if (refresh) {
-        await api.post('/api/logout/', { refresh })
-      }
-    } catch {
-      // Ignore server errors – always clear local state
-    } finally {
-      localStorage.removeItem('access')
-      localStorage.removeItem('refresh')
-      localStorage.removeItem('user')
-      delete api.defaults.headers.common['Authorization']
-      // Sync Redux store so any Redux auth selectors reset immediately
-      store.dispatch(reduxLogout())
-      setUser(null)
-      setIsAuthenticated(false)
-    }
-  }, [])
-
-  const updateUser = useCallback((updates: Partial<AuthUser>) => {
-    setUser((prev) => {
-      if (!prev) return null
-      const updatedUser = { ...prev, ...updates }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-      // Sync Redux
-      store.dispatch(reduxLogin(updatedUser as Record<string, unknown>))
-      return updatedUser
-    })
-  }, [])
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      loading,
-      isAuthenticated,
-      login,
-      logout,
-      googleAuth,
-      updateUser,
-    }),
-    [user, loading, isAuthenticated, login, logout, googleAuth, updateUser],
-  )
+    updateUser: (updates) => {
+      dispatch(updateUser(updates))
+    },
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

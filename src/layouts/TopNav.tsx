@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bell, Briefcase, Clock, Menu, Search, Zap } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { ROUTES } from '@/config/routes'
 import Logo from '@/components/Logo'
 import { useAuth } from '@/context/AuthContext'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
@@ -212,7 +213,10 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 shadow-sm">
+        <Link
+          to={ROUTES.settings.profile}
+          className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 shadow-sm hover:border-slate-300 transition-colors"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white overflow-hidden">
             {user?.avatar ? (
               <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -223,7 +227,7 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <span className="hidden max-w-24 truncate text-sm font-semibold text-slate-700 sm:block">
             {getShortName(displayName)}
           </span>
-        </div>
+        </Link>
       </div>
     </header>
   )

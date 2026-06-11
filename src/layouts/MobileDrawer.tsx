@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { ROUTES } from '@/config/routes'
 import { X, LogOut, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import Logo from '../components/Logo'
@@ -172,21 +173,27 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         {/* Footer: user info + logout */}
         <div className="px-4 py-4 border-t border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center shrink-0 overflow-hidden">
-              {user?.avatar ? (
-                <img src={user.avatar as string} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xs font-bold text-white leading-none">{initials}</span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
-              <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
-            </div>
+            <Link
+              to={ROUTES.settings.profile}
+              onClick={onClose}
+              className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center shrink-0 overflow-hidden">
+                {user?.avatar ? (
+                  <img src={user.avatar as string} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-white leading-none">{initials}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
+                <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
+              </div>
+            </Link>
             <button
               aria-label="Log out"
               onClick={() => { void logout(); onClose() }}
-              className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
+              className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 shrink-0"
             >
               <LogOut size={16} />
             </button>

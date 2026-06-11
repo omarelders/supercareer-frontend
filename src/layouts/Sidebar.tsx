@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { ROUTES } from '@/config/routes'
 import {
   ChevronDown,
   ChevronRight,
@@ -125,25 +126,30 @@ export default function Sidebar() {
 
       <div className="px-3 py-3 border-t border-slate-200">
         <div className="flex items-center gap-2.5">
-          <div
-            aria-hidden="true"
-            className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0 overflow-hidden"
+          <Link
+            to={ROUTES.settings.profile}
+            className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
           >
-            {user?.avatar ? (
-              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-xs font-bold text-white leading-none">{initials}</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
-            <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
-          </div>
+            <div
+              aria-hidden="true"
+              className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0 overflow-hidden"
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-white leading-none">{initials}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
+              <p className="text-xs text-slate-400 truncate capitalize">{role}</p>
+            </div>
+          </Link>
           <button
             aria-label="Log out"
             onClick={() => void logout()}
             title="Log out"
-            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50 shrink-0"
           >
             <LogOut size={15} />
           </button>

@@ -8,7 +8,6 @@ import {
   Send,
   Sparkles,
 } from 'lucide-react'
-import api from '@/services/api'
 import {
   createProposal,
   fetchProjects,
@@ -16,31 +15,10 @@ import {
   type ApiProject,
 } from '@/services/opportunitiesApi'
 import { mapApiProjectToProjectMatch } from '@/services/freelanceApi'
-import { useAuth } from '@/context/AuthContext'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-interface ProfileResponse {
-  full_name?: string
-  username?: string
-  email?: string
-  professional_title?: string
-  location?: string
-  bio?: string
-  specialization?: string
-  experience?: string
-  skills?: string[]
-  experiences?: Array<{
-    job_title: string
-    company: string
-    description: string
-    start_date: string
-    end_date: string
-    is_current: boolean
-  }>
-}
 
 function getDefaultProject(): ApiProject {
   return {
@@ -58,34 +36,6 @@ function getDefaultProject(): ApiProject {
     scraped_at: '',
     match_score: 0,
   }
-}
-
-function buildUserProfileText(profile: ProfileResponse | null, displayName: string): string {
-  if (!profile) return `Name: ${displayName}`
-  const skillsStr = profile.skills?.length ? profile.skills.join(', ') : 'Not specified'
-  const expStr = profile.experiences?.map(e => 
-    `- ${e.job_title} at ${e.company}: ${e.description}`
-  ).join('\n') || 'Not specified'
-  
-  return [
-    `Name: ${profile.full_name || displayName}`,
-    `Title: ${profile.professional_title || 'Freelancer'}`,
-    `Bio/Summary: ${profile.bio || 'Not specified'}`,
-    `Specialization: ${profile.specialization || 'Not specified'}`,
-    `Skills: ${skillsStr}`,
-    `Experience:\n${expStr}`
-  ].join('\n')
-}
-
-function buildProjectDetailsText(project: ApiProject): string {
-  const skillsStr = project.required_skills?.length ? project.required_skills.join(', ') : 'Not specified'
-  return [
-    `Project Title: ${project.title}`,
-    `Description: ${project.description}`,
-    `Budget: ${project.budget || 'Not specified'}`,
-    `Duration: ${project.duration || 'Not specified'}`,
-    `Required Skills: ${skillsStr}`
-  ].join('\n')
 }
 
 function getErrorMessage(error: unknown): string {
@@ -168,13 +118,6 @@ function useTypingEffect(text: string, speed = 12, enabled = false) {
 // ---------------------------------------------------------------------------
 
 export default function CreateProposalPage() {
-  const { user } = useAuth()
-  const displayName =
-    (user?.full_name as string | undefined) ??
-    (user?.username as string | undefined) ??
-    (user?.email as string | undefined) ??
-    'Alex Morgan'
-
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const projectId = searchParams.get('projectId')
@@ -182,9 +125,6 @@ export default function CreateProposalPage() {
   const [project, setProject] = useState<ApiProject | null>(null)
   const [isLoadingProject, setIsLoadingProject] = useState(!!projectId)
   const [projectError, setProjectError] = useState<string | null>(null)
-
-  const [profile, setProfile] = useState<ProfileResponse | null>(null)
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
 
   const [generating, setGenerating] = useState(false)
   const [proposalText, setProposalText] = useState('')
@@ -227,36 +167,13 @@ export default function CreateProposalPage() {
     }
   }, [projectId])
 
-  // Load the richer user profile context for the generation prompt.
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadProfile() {
-      setIsLoadingProfile(true)
-      try {
-        const { data } = await api.get<ProfileResponse>('/api/profile/')
-        if (!cancelled) setProfile(data)
-      } catch {
-        if (!cancelled) setProfile(null)
-      } finally {
-        if (!cancelled) setIsLoadingProfile(false)
-      }
-    }
-
-    void loadProfile()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   // Auto-generate once we have enough context.
   useEffect(() => {
-    if (isLoadingProfile || generating || proposalText) return
+    if (generating || proposalText) return
     if (projectId && !project) return
     void handleGenerate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, projectId, isLoadingProfile])
+  }, [project, projectId])
 
   const { displayed, done: typingDone } = useTypingEffect(proposalText, 8, typingEnabled)
 
@@ -270,15 +187,12 @@ export default function CreateProposalPage() {
 
     try {
       const targetProject = project ?? getDefaultProject()
-      const userProfileText = buildUserProfileText(profile, displayName)
-      const projectDetailsText = buildProjectDetailsText(targetProject)
 
       const response = await generateProposal({
-        user_profile: userProfileText,
-        project_details: projectDetailsText,
+        project_id: targetProject.id,
       })
 
-      setProposalText(response.proposal_text)
+      setProposalText(response.proposal)
       setTypingEnabled(true)
     } catch (error) {
       setGenerationError(getErrorMessage(error))
@@ -366,7 +280,7 @@ export default function CreateProposalPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => void handleGenerate()}
-              disabled={generating || isLoadingProject || isLoadingProfile}
+              disabled={generating || isLoadingProject}
               className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
             >
               <Sparkles size={12} />
