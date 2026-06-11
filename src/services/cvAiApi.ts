@@ -65,28 +65,49 @@ export interface CvUserInteractionResponse {
 export function cvDataToApiFormat(data: CVData): ApiCV {
   return {
     'Personal Details': {
-      'Full Name': data.personal.fullName,
-      'Phone Number': data.personal.phone,
-      'Professional Title': data.personal.title,
-      'Email Address': data.personal.email,
-      'Location': data.personal.location,
-      'Portfolio / LinkedIn URL': data.personal.url,
-      'Professional Summary': data.personal.summary,
+      'Full Name': data.personal.fullName || '',
+      'Phone Number': data.personal.phone || '',
+      'Professional Title': data.personal.title || '',
+      'Email Address': data.personal.email || '',
+      'Location': data.personal.location || '',
+      // Always include a URI-valid value. The AI endpoint (FastAPI/Pydantic)
+      // requires all PersonalDetails fields and validates URI format strictly.
+      // We strip this field for document saves if the user left it blank
+      // (done in patchCvContent/saveBaseCv to avoid Django URLValidator errors).
+      'Portfolio / LinkedIn URL': data.personal.url || 'https://linkedin.com',
+      'Professional Summary': data.personal.summary || '',
     },
-    'Experience': data.experience.map((exp) => ({
-      'I currently work here': exp.current,
-      'Job Title': exp.title,
-      'Company': exp.company,
-      'Start Date': exp.startDate,
-      'End Date': exp.endDate,
-      'Description': exp.description,
-    })),
-    'Education': data.education.map((edu) => ({
-      'School / University': edu.school,
-      'Degree / Qualification': edu.degree,
-      'Year of Graduation': edu.year,
-      'Additional Details': edu.description,
-    })),
+    'Experience': (data.experience || [])
+      .filter((exp) => {
+        const hasTitle = exp.title?.trim()
+        const hasCompany = exp.company?.trim()
+        const hasStartDate = exp.startDate?.trim()
+        const hasEndDate = exp.endDate?.trim()
+        const hasDesc = exp.description?.trim()
+        return hasTitle || hasCompany || hasStartDate || hasEndDate || hasDesc
+      })
+      .map((exp) => ({
+        'I currently work here': exp.current ?? false,
+        'Job Title': exp.title || '',
+        'Company': exp.company || '',
+        'Start Date': exp.startDate || '',
+        'End Date': exp.endDate || '',
+        'Description': exp.description || '',
+      })),
+    'Education': (data.education || [])
+      .filter((edu) => {
+        const hasSchool = edu.school?.trim()
+        const hasDegree = edu.degree?.trim()
+        const hasYear = edu.year?.trim()
+        const hasDesc = edu.description?.trim()
+        return hasSchool || hasDegree || hasYear || hasDesc
+      })
+      .map((edu) => ({
+        'School / University': edu.school || '',
+        'Degree / Qualification': edu.degree || '',
+        'Year of Graduation': edu.year || '',
+        'Additional Details': edu.description || '',
+      })),
     'Skills': data.skills,
   }
 }

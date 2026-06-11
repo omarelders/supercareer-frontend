@@ -5,9 +5,8 @@ import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import type { CVData } from '@/features/cv-builder/types'
 import { MantineProvider } from '@mantine/core'
 import { cvUserInteraction } from '@/services/cvAiApi'
-import { getCvContent, saveCvContent } from '@/services/jobsApi'
-import api from '@/services/api'
-import { useAuth } from '@/context/AuthContext'
+import { saveCvContent } from '@/services/jobsApi'
+import { getCvDocumentById, dbCvToCvData, saveBaseCv } from '@/services/documentsApi'
 
 interface Message {
   id: string
@@ -33,12 +32,13 @@ const INITIAL_CV: CVData = {
 export default function CvAiEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   const [cvData, setCvData] = useState<CVData>(INITIAL_CV)
   const [cvLoading, setCvLoading] = useState(true)
   const [cvError, setCvError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'preview'>('chat')
+  /** True when the CV being edited is the user's Base CV */
+  const [isBaseCv, setIsBaseCv] = useState(false)
 
   const chatStorageKey = `cv_ai_chat_${id}`
 
@@ -75,10 +75,10 @@ export default function CvAiEditPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const cvDataStorageKey = `cv_data_${id}`
-
   // ---------------------------------------------------------------------------
-  // Fetch CV data on mount
+  // Fetch CV data on mount.
+  // Uses getCvDocumentById so we can also read `is_base` and choose the
+  // correct save endpoint accordingly.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!id) {
@@ -90,94 +90,36 @@ export default function CvAiEditPage() {
     let cancelled = false
 
     async function loadCv() {
+      const numericId = Number(id)
       setCvLoading(true)
       setCvError(null)
       try {
-        const numericId = Number(id)
-
-        // Try to load from backend
-        try {
-          const stored = await getCvContent(numericId)
-          if (stored) {
+        const dbCv = await getCvDocumentById(numericId)
+        if (!cancelled) {
+          const isBase = dbCv.is_base === true
+          setIsBaseCv(isBase)
+          const converted = dbCvToCvData(dbCv)
+          setCvData(converted)
+          setCvLoading(false)
+        }
+      } catch {
+        if (!cancelled) {
+          try {
+            const { getBaseCv } = await import('@/services/documentsApi')
+            const baseCv = await getBaseCv()
             if (!cancelled) {
-              setCvData(stored)
+              setIsBaseCv(true)
+              const convertedBase = dbCvToCvData(baseCv)
+              setCvData(convertedBase)
               setCvLoading(false)
             }
-            return
+          } catch (fallbackErr) {
+            console.error('[CvAiEditPage] Failed to load CV:', fallbackErr)
+            if (!cancelled) {
+              setCvError('Could not load CV data. You can still chat with the AI to build your CV.')
+              setCvLoading(false)
+            }
           }
-        } catch (err) {
-          console.error('Failed to load CV content from backend:', err)
-        }
-
-        // 2. No saved content — fall back to profile defaults
-        let profileName = ''
-        let profileTitle = ''
-
-        try {
-          const { data } = await api.get('/api/profile/')
-          if (data) {
-            profileName =
-              data.full_name ||
-              [data.first_name, data.last_name].filter(Boolean).join(' ') ||
-              data.username ||
-              ''
-            profileTitle = data.professional_title || ''
-          }
-        } catch (profileErr) {
-          console.error('Failed to load profile for CV defaults:', profileErr)
-        }
-
-        // Fallbacks from auth context
-        if (!profileName && user) {
-          profileName =
-            (user.full_name as string) ||
-            (user.username as string) ||
-            (user.email as string) ||
-            ''
-        }
-
-        // Import dynamically to avoid circular deps; the slice already has the CVs in localStorage
-        const { getCustomCVs } = await import('@/services/jobsApi')
-        const cvs = await getCustomCVs()
-        const found = cvs.find((cv) => String(cv.id) === String(id))
-
-        if (!found) {
-          // CV not found in list – show a placeholder state with a notice
-          // The AI interaction will still work because we send the current cvData
-          if (!cancelled) {
-            setCvData((prev) => ({
-              ...prev,
-              personal: {
-                ...prev.personal,
-                fullName: profileName || prev.personal.fullName,
-                title: profileTitle || prev.personal.title,
-              },
-            }))
-            setCvError(null)
-            setCvLoading(false)
-          }
-          return
-        }
-
-        // The list endpoint only returns metadata (id, title, date…).
-        // If the backend exposes a GET /API/CV/{id}/ endpoint in the future,
-        // call it here to hydrate the full CVData. For now we surface the
-        // metadata we have and let the AI interaction fill in the rest.
-        if (!cancelled) {
-          setCvData((prev) => ({
-            ...prev,
-            personal: {
-              ...prev.personal,
-              fullName: profileName || prev.personal.fullName,
-              title: profileTitle || prev.personal.title || found.professional_title,
-            },
-          }))
-          setCvLoading(false)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setCvError('Failed to load CV data. You can still chat with the AI.')
-          setCvLoading(false)
         }
       }
     }
@@ -186,7 +128,7 @@ export default function CvAiEditPage() {
     return () => {
       cancelled = true
     }
-  }, [id, user])
+  }, [id])
 
   // ---------------------------------------------------------------------------
   // Auto-scroll on new messages
@@ -219,15 +161,24 @@ export default function CvAiEditPage() {
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setIsLoading(true)
 
+    console.log(`💬 [CvAiEditPage] [Step 2: AI interaction] User prompt: "${trimmed}"`)
+    console.log(`📡 [CvAiEditPage] Calling cvUserInteraction with current cvData:`, cvData)
+
     try {
       const { updatedCv, aiMessage } = await cvUserInteraction(cvData, trimmed)
 
       // Update the live CV preview with the AI-modified version
       setCvData(updatedCv)
+
       // Persist in the background — don't block the chat response on the save
-      if (id) {
-        saveCvContent(Number(id), updatedCv).catch((err) =>
-          console.warn('Background save failed:', err)
+      if (isBaseCv) {
+        saveBaseCv(updatedCv).catch((err) =>
+          console.warn('[CvAiEditPage] Background base CV save failed:', err)
+        )
+      } else if (id) {
+        const numericId = Number(id)
+        saveCvContent(numericId, updatedCv).catch((err) =>
+          console.warn('[CvAiEditPage] Background save failed:', err)
         )
       }
 
@@ -268,16 +219,20 @@ export default function CvAiEditPage() {
   // Manual save
   // ---------------------------------------------------------------------------
   const handleSave = async () => {
-    if (!id || isSaving) return
+    if (isSaving) return
     setIsSaving(true)
     setSaved(false)
     setSaveError(null)
     try {
-      await saveCvContent(Number(id), cvData)
+      if (isBaseCv) {
+        await saveBaseCv(cvData)
+      } else if (id) {
+        const numericId = Number(id)
+        await saveCvContent(numericId, cvData)
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: unknown) {
-      console.error('Failed to save CV:', err)
       const msg = err instanceof Error ? err.message : 'Save failed. Please try again.'
       setSaveError(msg)
       setTimeout(() => setSaveError(null), 4000)
