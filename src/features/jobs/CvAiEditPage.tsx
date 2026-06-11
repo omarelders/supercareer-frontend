@@ -290,7 +290,7 @@ export default function CvAiEditPage() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-[calc(100vh-100px)] w-full">
       {/* Top bar */}
       <div className="flex items-center gap-3 mb-4 px-1">
         <button
