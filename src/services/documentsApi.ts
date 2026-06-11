@@ -290,12 +290,32 @@ export async function getCvDocumentById(id: number): Promise<DbCV> {
  * auto-marking it as the user's Base CV.
  */
 export async function createCvDocument(cvData: CVData): Promise<DbCV> {
-  const payload = {
-    ...buildFlatCvPayload(cvData),
-    is_base: false, // Enforce: regular CVs are never the Base CV
+  const flat = buildFlatCvPayload(cvData) as any;
+
+  // portfolio_url frequently fails Django's strict URLValidator when extracted
+  // from old resumes (e.g. "LinkedIn", partial paths, no scheme).
+  // Always omit it on creation — the full URL is preserved inside the `content`
+  // JSON blob and can be patched back after the record is created.
+  delete flat.portfolio_url;
+
+  // Also drop other optional fields that may be blank to avoid Django validators
+  // rejecting empty strings on fields that don't allow blank.
+  const optionalFields = ['email_address', 'phone_number', 'location', 'professional_summary', 'professional_title'];
+  optionalFields.forEach(field => {
+    if (flat[field] === '') {
+      delete flat[field];
+    }
+  });
+
+  const payload = { ...flat, is_base: false };
+
+  try {
+    const { data } = await api.post<DbCV>('/api/documents/cv/', payload)
+    return data
+  } catch (error: any) {
+    console.error('[createCvDocument] POST failed:', error?.response?.data || error);
+    throw error;
   }
-  const { data } = await api.post<DbCV>('/api/documents/cv/', payload)
-  return data
 }
 
 /**
@@ -361,7 +381,12 @@ export function buildFlatCvPayload(cvData: CVData): Partial<DbCV> {
     email_address: cvData.personal.email || '',
     phone_number: cvData.personal.phone || '',
     location: cvData.personal.location || '',
-    portfolio_url: cvData.personal.url || '',
+    portfolio_url: (() => {
+      const url = cvData.personal.url?.trim();
+      if (!url) return '';
+      if (!/^https?:\/\//i.test(url)) return `https://${url}`;
+      return url;
+    })(),
     professional_summary: cvData.personal.summary || '',
     Experience: (cvData.experience || [])
       .filter((exp) => exp.title?.trim() || exp.company?.trim() || exp.startDate?.trim() || exp.endDate?.trim() || exp.description?.trim())

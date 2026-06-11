@@ -78,7 +78,14 @@ export function cvDataToApiFormat(data: CVData): ApiCV {
       // requires all PersonalDetails fields and validates URI format strictly.
       // We strip this field for document saves if the user left it blank
       // (done in patchCvContent/saveBaseCv to avoid Django URLValidator errors).
-      'Portfolio / LinkedIn URL': data.personal.url || 'https://linkedin.com',
+      'Portfolio / LinkedIn URL': (() => {
+        let url = data.personal.url?.trim();
+        if (!url) return 'https://linkedin.com';
+        if (!/^https?:\/\//i.test(url)) {
+          url = `https://${url}`;
+        }
+        return url;
+      })(),
       'Professional Summary': data.personal.summary || '',
     },
     'Experience': (data.experience || [])
