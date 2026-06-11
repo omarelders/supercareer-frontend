@@ -95,27 +95,7 @@ export default function CvAiEditPage() {
       try {
         const numericId = Number(id)
 
-        // 1. Check localStorage first — most up-to-date after a save
-        try {
-          const local = localStorage.getItem(cvDataStorageKey)
-          if (local) {
-            const parsed = JSON.parse(local)
-            if (parsed && parsed.personal && parsed.experience) {
-              if (!cancelled) {
-                setCvData(parsed)
-                setCvLoading(false)
-              }
-              // Still fetch from backend in background to stay in sync
-              getCvContent(numericId).then((remote) => {
-                // Only apply remote if localStorage doesn't have richer data
-                // (i.e., skip — localStorage is always the latest user save)
-              }).catch(() => {})
-              return
-            }
-          }
-        } catch { /* ignore */ }
-
-        // 2. Try to load from backend
+        // Try to load from backend
         try {
           const stored = await getCvContent(numericId)
           if (stored) {
@@ -244,8 +224,6 @@ export default function CvAiEditPage() {
 
       // Update the live CV preview with the AI-modified version
       setCvData(updatedCv)
-      // Persist to localStorage immediately so a reload gets the latest data
-      localStorage.setItem(cvDataStorageKey, JSON.stringify(updatedCv))
       // Persist in the background — don't block the chat response on the save
       if (id) {
         saveCvContent(Number(id), updatedCv).catch((err) =>
@@ -296,8 +274,6 @@ export default function CvAiEditPage() {
     setSaveError(null)
     try {
       await saveCvContent(Number(id), cvData)
-      // Mirror to localStorage so reload gets the latest data
-      localStorage.setItem(cvDataStorageKey, JSON.stringify(cvData))
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: unknown) {
