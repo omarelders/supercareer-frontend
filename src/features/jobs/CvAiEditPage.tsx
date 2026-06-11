@@ -70,6 +70,7 @@ export default function CvAiEditPage() {
   const [sendError, setSendError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -268,12 +269,16 @@ export default function CvAiEditPage() {
     if (!id || isSaving) return
     setIsSaving(true)
     setSaved(false)
+    setSaveError(null)
     try {
       await saveCvContent(Number(id), cvData)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to save CV:', err)
+      const msg = err instanceof Error ? err.message : 'Save failed. Please try again.'
+      setSaveError(msg)
+      setTimeout(() => setSaveError(null), 4000)
     } finally {
       setIsSaving(false)
     }
@@ -302,7 +307,7 @@ export default function CvAiEditPage() {
             disabled={isSaving || saved || cvLoading}
             className="flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-semibold transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
-              background: saved ? '#10B981' : '#3B82F6',
+              background: saveError ? '#EF4444' : saved ? '#10B981' : '#3B82F6',
               color: 'white',
             }}
           >
@@ -310,6 +315,8 @@ export default function CvAiEditPage() {
               <><Loader2 size={14} className="animate-spin" /> Saving…</>
             ) : saved ? (
               <><CheckCircle size={14} /> Saved!</>
+            ) : saveError ? (
+              <><AlertCircle size={14} /> Save Failed</>
             ) : (
               <><Save size={14} /> Save Changes</>
             )}
