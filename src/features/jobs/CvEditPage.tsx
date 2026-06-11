@@ -232,6 +232,7 @@ export default function CvEditPage() {
             {step === 4 && (
               <SkillsForm
                 data={cvData.skills}
+                cvData={cvData}
                 onChange={(skills) => setCvData({ ...cvData, skills })}
                 onNext={handleSave}
                 onBack={() => setStep(3)}
