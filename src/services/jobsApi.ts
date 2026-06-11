@@ -6,7 +6,6 @@ import {
   updateCustomCVBase,
   renameCustomCV,
   getCvDocumentById,
-  updateCvDocument,
   patchCvDocument,
   dbCvToCvData,
   cvDataToDbCv,
