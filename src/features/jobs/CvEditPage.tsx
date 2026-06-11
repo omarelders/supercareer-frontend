@@ -44,6 +44,8 @@ export default function CvEditPage() {
   const [cvData, setCvData] = useState<CVData>(EMPTY_CV)
   const [isDataLoading, setIsDataLoading] = useState(true)
 
+  const cvDataStorageKey = `cv_data_${id}`
+
   const [step, setStep] = useState(1)
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -64,8 +66,24 @@ export default function CvEditPage() {
     async function loadData() {
       setIsDataLoading(true)
 
-      // 1. Try to load previously saved content for this CV id
       const numericId = Number(id)
+
+      // 1. Check localStorage first — most up-to-date after a manual save
+      try {
+        const local = localStorage.getItem(cvDataStorageKey)
+        if (local) {
+          const parsed = JSON.parse(local)
+          if (parsed && parsed.personal && parsed.experience) {
+            if (!cancelled) {
+              setCvData(parsed)
+              setIsDataLoading(false)
+            }
+            return
+          }
+        }
+      } catch { /* ignore */ }
+
+      // 2. Try to load from backend
       try {
         const stored = await getCvContent(numericId)
         if (stored) {
@@ -132,6 +150,8 @@ export default function CvEditPage() {
     try {
       if (id) {
         await saveCvContent(Number(id), cvData)
+        // Mirror to localStorage so reload picks up the latest edit
+        localStorage.setItem(cvDataStorageKey, JSON.stringify(cvData))
       }
       setSaved(true)
       setTimeout(() => navigate(-1), 600)
