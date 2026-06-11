@@ -148,7 +148,16 @@ export function dbCvToCvData(dbCv: DbCV): CVData {
   }
 }
 
-/** Mapping function from frontend CVData shape to database CV shape for saving. */
+/**
+ * Mapping function from frontend CVData shape to database CV shape for saving.
+ *
+ * NOTE: We intentionally omit the nested Experience / Education / Skills arrays
+ * from the PATCH payload because Django REST Framework's nested serializers
+ * apply strict validation (e.g. required fields) that causes 400 errors even
+ * for valid-looking data. The full CVData is already serialised into the
+ * `content` text field as JSON, which is what we read back on load, so the
+ * nested arrays are redundant for persistence purposes.
+ */
 export function cvDataToDbCv(data: CVData): Partial<DbCV> {
   return {
     full_name: data.personal.fullName,
@@ -158,22 +167,9 @@ export function cvDataToDbCv(data: CVData): Partial<DbCV> {
     location: data.personal.location,
     portfolio_url: data.personal.url,
     professional_summary: data.personal.summary,
-    content: JSON.stringify(data), // Store full JSON to bypass nested serializer limits
-    Experience: data.experience.map((exp) => ({
-      job_title: exp.title,
-      company: exp.company,
-      start_date: exp.startDate,
-      end_date: exp.endDate,
-      is_current: exp.current,
-      description: exp.description,
-    })),
-    Education: data.education.map((edu) => ({
-      school: edu.school,
-      degree: edu.degree,
-      graduation_year: edu.year,
-      description: edu.description,
-    })),
-    Skills: data.skills,
+    // Serialise the entire CVData blob so it survives a page refresh
+    // without depending on the nested-array serialisers.
+    content: JSON.stringify(data),
   }
 }
 
