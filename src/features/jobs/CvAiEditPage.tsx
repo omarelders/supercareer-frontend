@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Sparkles, User, Bot, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, User, Bot, Loader2, AlertCircle, RefreshCw, Save, CheckCircle } from 'lucide-react'
 import { CVPreview } from '@/features/cv-builder/components/CVPreview'
 import type { CVData } from '@/features/cv-builder/types'
 import { MantineProvider } from '@mantine/core'
@@ -68,6 +68,8 @@ export default function CvAiEditPage() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -258,6 +260,24 @@ export default function CvAiEditPage() {
   }
 
   // ---------------------------------------------------------------------------
+  // Manual save
+  // ---------------------------------------------------------------------------
+  const handleSave = async () => {
+    if (!id || isSaving) return
+    setIsSaving(true)
+    setSaved(false)
+    try {
+      await saveCvContent(Number(id), cvData)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      console.error('Failed to save CV:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
@@ -274,9 +294,28 @@ export default function CvAiEditPage() {
           <h1 className="text-base font-bold text-slate-800">Edit with AI</h1>
           <p className="text-xs text-slate-400">CV #{id} — chat with the AI to refine your CV</p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full">
-          <Sparkles size={13} className="text-violet-500" />
-          <span className="text-xs font-semibold text-violet-600">AI Powered</span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={handleSave}
+            disabled={isSaving || saved || cvLoading}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-semibold transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              background: saved ? '#10B981' : '#3B82F6',
+              color: 'white',
+            }}
+          >
+            {isSaving ? (
+              <><Loader2 size={14} className="animate-spin" /> Saving…</>
+            ) : saved ? (
+              <><CheckCircle size={14} /> Saved!</>
+            ) : (
+              <><Save size={14} /> Save Changes</>
+            )}
+          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-full">
+            <Sparkles size={13} className="text-violet-500" />
+            <span className="text-xs font-semibold text-violet-600">AI Powered</span>
+          </div>
         </div>
       </div>
 
