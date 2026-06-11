@@ -106,6 +106,18 @@ export interface DbCV {
 
 /** Mapping function from database CV shape to frontend CVData shape. */
 export function dbCvToCvData(dbCv: DbCV): CVData {
+  // If the backend has stored the full JSON in the `content` field, prefer it to bypass nested serializer limitations.
+  if (dbCv.content && dbCv.content.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(dbCv.content);
+      if (parsed && parsed.personal && parsed.experience) {
+        return parsed as CVData;
+      }
+    } catch (e) {
+      console.warn("Failed to parse dbCv.content as JSON", e);
+    }
+  }
+
   return {
     personal: {
       fullName: dbCv.full_name || '',
@@ -146,6 +158,7 @@ export function cvDataToDbCv(data: CVData): Partial<DbCV> {
     location: data.personal.location,
     portfolio_url: data.personal.url,
     professional_summary: data.personal.summary,
+    content: JSON.stringify(data), // Store full JSON to bypass nested serializer limits
     Experience: data.experience.map((exp) => ({
       job_title: exp.title,
       company: exp.company,

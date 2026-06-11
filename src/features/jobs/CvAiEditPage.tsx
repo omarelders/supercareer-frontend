@@ -40,14 +40,31 @@ export default function CvAiEditPage() {
   const [cvError, setCvError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'preview'>('chat')
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '0',
-      role: 'assistant',
-      content:
-        "Hello! I'm your AI career assistant. Tell me how you'd like to improve your CV — I can strengthen your summary, tailor it for a specific role, rewrite bullet points, and more.",
-    },
-  ])
+  const chatStorageKey = `cv_ai_chat_${id}`
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const stored = localStorage.getItem(chatStorageKey)
+      if (stored) {
+        return JSON.parse(stored) as Message[]
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return [
+      {
+        id: '0',
+        role: 'assistant',
+        content:
+          "Hello! I'm your AI career assistant. Tell me how you'd like to improve your CV — I can strengthen your summary, tailor it for a specific role, rewrite bullet points, and more.",
+      },
+    ]
+  })
+
+  // Sync messages to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem(chatStorageKey, JSON.stringify(messages))
+  }, [messages, chatStorageKey])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
