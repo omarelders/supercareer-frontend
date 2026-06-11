@@ -19,6 +19,8 @@ const aiApi = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // AI responses can take a while — allow up to 60 seconds before giving up
+  timeout: 60_000,
 })
 
 // Attach access token to AI requests in case the backend/gateway requires it for external traffic
@@ -33,4 +35,19 @@ aiApi.interceptors.request.use(
   (error) => Promise.reject(error),
 )
 
+// Produce a clear, user-friendly message on timeout or network failure
+aiApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      return Promise.reject(new Error('The AI is taking too long to respond. Please try again.'))
+    }
+    if (!error.response) {
+      return Promise.reject(new Error('Unable to reach the AI service. Please check your connection.'))
+    }
+    return Promise.reject(error)
+  },
+)
+
 export default aiApi
+

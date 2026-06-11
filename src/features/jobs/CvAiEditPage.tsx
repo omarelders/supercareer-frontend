@@ -221,9 +221,11 @@ export default function CvAiEditPage() {
 
       // Update the live CV preview with the AI-modified version
       setCvData(updatedCv)
-      // Persist the AI-updated CV so "Edit Manually" sees the latest version
+      // Persist in the background — don't block the chat response on the save
       if (id) {
-        await saveCvContent(Number(id), updatedCv)
+        saveCvContent(Number(id), updatedCv).catch((err) =>
+          console.warn('Background save failed:', err)
+        )
       }
 
       const assistantMsg: Message = {
