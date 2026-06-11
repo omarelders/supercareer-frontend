@@ -7,12 +7,13 @@ import {
   Clock,
   ExternalLink,
   FileText,
+  Loader2,
   MapPin,
   Sparkles,
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
 import { fetchJobs, type ApiJob } from '@/services/opportunitiesApi'
-import { mapApiJobToJobMatch } from '@/services/jobsApi'
+import { mapApiJobToJobMatch, createTailoredCvForJob } from '@/services/jobsApi'
 import type { JobMatch } from '@/services/jobsApi'
 
 // ---------------------------------------------------------------------------
@@ -154,6 +155,23 @@ export default function JobDetailPage() {
   const [rawJob, setRawJob] = useState<ApiJob | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isCreatingCv, setIsCreatingCv] = useState(false)
+  const [createCvError, setCreateCvError] = useState<string | null>(null)
+
+  const handleCreateCustomCv = async () => {
+    if (!rawJob || isCreatingCv) return
+    setIsCreatingCv(true)
+    setCreateCvError(null)
+    try {
+      const newCv = await createTailoredCvForJob(rawJob.id)
+      navigate(`/jobs/cv/${newCv.id}/ai-edit`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create CV. Please try again.'
+      setCreateCvError(msg)
+    } finally {
+      setIsCreatingCv(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -287,13 +305,22 @@ export default function JobDetailPage() {
         </div>
 
         {/* CTA buttons */}
+        {createCvError && (
+          <div className="mb-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs">
+            {createCvError}
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => navigate(`/jobs/custom-cv?jobId=${rawJob.id}`)}
-            className="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
+            onClick={handleCreateCustomCv}
+            disabled={isCreatingCv}
+            className="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors shadow-sm"
           >
-            <FileText size={16} />
-            Create Custom CV
+            {isCreatingCv ? (
+              <><Loader2 size={16} className="animate-spin" /> Generating CV…</>
+            ) : (
+              <><FileText size={16} /> Create Custom CV</>
+            )}
           </button>
           {rawJob.source_url && (
             <a

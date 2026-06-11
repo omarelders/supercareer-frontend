@@ -1,31 +1,40 @@
 /**
  * cvDocumentSlice.ts
  *
- * Manages the async lifecycle of saving a CV to the backend via
- * POST /api/documents/cv/create/.
+ * Manages the async lifecycle of saving a CV from the CV Builder.
  *
- * The slice intentionally stays thin. State it tracks:
- *   - isSaving          – request in-flight
- *   - lastSaved         – the most recently persisted ApiCvDocument
- *   - error             – the last save error message (if any)
+ * "Save Draft" in the CV Builder creates a REGULAR (non-base) CV via:
+ *   POST /api/documents/cv/
+ *
+ * It does NOT create a Base CV. The user can mark any CV as Base
+ * from the Custom CVs page via the "Make as Base CV" dropdown option.
+ *
+ * After a successful save, `fetchCustomCVs` is dispatched so the
+ * Custom CVs list is immediately up to date.
  */
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import type { RootState } from '@/store/store'
-import { createCvDocument, type DbCV, cvDataToDbCv } from '@/services/documentsApi'
+import { createCvDocument, type DbCV } from '@/services/documentsApi'
+import { fetchCustomCVs } from '@/store/slices/customCvSlice'
 import type { CVData } from '@/features/cv-builder/types'
 
 // ---------------------------------------------------------------------------
-// Thunk
+// Thunk: create a new regular CV from the CV Builder
 // ---------------------------------------------------------------------------
 
 export const saveCvDocument = createAsyncThunk<
   DbCV,
   CVData,
   { rejectValue: string }
->('cvDocument/save', async (payload, { rejectWithValue }) => {
+>('cvDocument/save', async (payload, { rejectWithValue, dispatch }) => {
   try {
-    const apiPayload = cvDataToDbCv(payload)
-    return await createCvDocument(apiPayload)
+    // Always create a NEW regular CV — not a base CV
+    const created = await createCvDocument(payload)
+
+    // Refresh the Custom CVs list so the new entry appears immediately
+    dispatch(fetchCustomCVs())
+
+    return created
   } catch {
     return rejectWithValue('Failed to save CV. Please try again.')
   }

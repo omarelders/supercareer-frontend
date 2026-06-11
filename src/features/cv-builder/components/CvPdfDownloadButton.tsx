@@ -18,14 +18,20 @@ import { downloadCvAsPdf } from '@/features/cv-builder/utils/downloadCvAsPdf'
 import type { CVData } from '@/features/cv-builder/types'
 
 interface Props {
-  cvData: CVData
+  cvData?: CVData
+  fetchCvData?: () => Promise<CVData>
   filename?: string
   /** Optional extra className for the button */
   className?: string
 }
 
-export function CvPdfDownloadButton({ cvData, filename = 'CV', className = '' }: Props) {
+export function CvPdfDownloadButton({ cvData, fetchCvData, filename = 'CV', className = '' }: Props) {
   const [isDownloading, setIsDownloading] = useState(false)
+  const [activeCvData, setActiveCvData] = useState<CVData | null>(cvData || null)
+  
+  useEffect(() => {
+    if (cvData) setActiveCvData(cvData)
+  }, [cvData])
   const [portalEl] = useState(() => {
     const el = document.createElement('div')
     // Position completely off-screen so it's rendered but invisible
@@ -44,23 +50,36 @@ export function CvPdfDownloadButton({ cvData, filename = 'CV', className = '' }:
   }, [portalEl])
 
   const handleDownload = useCallback(async () => {
-    if (isDownloading || !cvRef.current) return
+    if (isDownloading) return
     setIsDownloading(true)
     try {
-      // Give the browser a tick to finish rendering the portal content
-      await new Promise((r) => setTimeout(r, 120))
-      await downloadCvAsPdf(cvRef.current, `${filename}.pdf`)
+      let currentData = activeCvData
+      if (fetchCvData && !currentData) {
+        currentData = await fetchCvData()
+        setActiveCvData(currentData)
+      }
+
+      if (!currentData) {
+        throw new Error('No CV data available')
+      }
+
+      // Give React a tick to render the portal with the new data
+      await new Promise((r) => setTimeout(r, 150))
+      
+      if (cvRef.current) {
+        await downloadCvAsPdf(cvRef.current, `${filename}.pdf`)
+      }
     } catch (err) {
       console.error('[CvPdfDownloadButton] PDF generation failed:', err)
     } finally {
       setIsDownloading(false)
     }
-  }, [isDownloading, filename])
+  }, [isDownloading, activeCvData, fetchCvData, filename])
 
   return (
     <>
       {/* Hidden off-screen CV render portal */}
-      {createPortal(
+      {activeCvData && createPortal(
         <div ref={cvRef}>
           <MantineProvider
             theme={{
@@ -69,7 +88,7 @@ export function CvPdfDownloadButton({ cvData, filename = 'CV', className = '' }:
               primaryColor: 'blue',
             }}
           >
-            <CVPreview data={cvData} />
+            <CVPreview data={activeCvData} />
           </MantineProvider>
         </div>,
         portalEl,

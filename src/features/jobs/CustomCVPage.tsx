@@ -4,8 +4,10 @@ import PaginationControls from '@/components/pagination/PaginationControls'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   fetchCustomCVs,
+  fetchBaseCv,
   selectCustomCvPagination,
   selectCustomCvState,
+  selectBaseCv,
   setCustomCvPage,
   deleteCV,
   makeBaseCv,
@@ -14,30 +16,7 @@ import {
 import CvRowSkeleton from './components/CvRowSkeleton'
 import { useNavigate } from 'react-router-dom'
 import { CvPdfDownloadButton } from '@/features/cv-builder/components/CvPdfDownloadButton'
-import type { CVData } from '@/features/cv-builder/types'
-import type { CustomCV } from '@/services/jobsApi'
-
-/**
- * Builds a minimal CVData object from the list-level metadata.
- * When a real GET /api/cv/{id}/ endpoint is available, replace this
- * with an actual fetch so the PDF contains the full content.
- */
-function buildPlaceholderCvData(row: CustomCV): CVData {
-  return {
-    personal: {
-      fullName: '',
-      title: row.title,
-      email: '',
-      phone: '',
-      location: '',
-      url: '',
-      summary: '',
-    },
-    experience: [],
-    education: [],
-    skills: [],
-  }
-}
+import { getCvContent } from '@/services/jobsApi'
 
 interface DropdownState {
   openId: number | null
@@ -49,6 +28,7 @@ export default function CustomCVPage() {
   const { isLoading, error, currentPage } = useAppSelector(selectCustomCvState)
   const { totalItems, totalPages, startIndex, endIndex, paginatedItems, allItems } =
     useAppSelector(selectCustomCvPagination)
+  const baseCv = useAppSelector(selectBaseCv)
 
   const [dropdown, setDropdown] = useState<DropdownState>({ openId: null })
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -56,10 +36,11 @@ export default function CustomCVPage() {
   const [renameId, setRenameId] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState<string>('')
 
-  const hasBaseCv = allItems.some((cv) => cv.base_cv)
+  const hasBaseCv = baseCv !== null || allItems.some((cv) => cv.base_cv)
 
   useEffect(() => {
     dispatch(fetchCustomCVs())
+    dispatch(fetchBaseCv())
   }, [dispatch])
 
   // Close dropdown on outside click
@@ -185,10 +166,7 @@ export default function CustomCVPage() {
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-1 text-slate-400 relative">
-                      <CvPdfDownloadButton
-                        cvData={buildPlaceholderCvData(row)}
-                        filename={row.title}
-                      />
+                      <CvPdfDownloadButton fetchCvData={() => getCvContent(row.id)} filename={row.title} />
                       <div className="relative">
                         <button
                           aria-label="More options"
@@ -346,10 +324,7 @@ export default function CustomCVPage() {
                         <Sparkles size={12} className="text-blue-500" />
                         Edit with AI
                       </button>
-                      <CvPdfDownloadButton
-                        cvData={buildPlaceholderCvData(row)}
-                        filename={row.title}
-                      />
+                      <CvPdfDownloadButton fetchCvData={() => getCvContent(row.id)} filename={row.title} />
                     </div>
                   </div>
                 </div>

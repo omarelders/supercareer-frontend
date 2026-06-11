@@ -1,4 +1,4 @@
-import api from './api'
+
 import { cvDataToApiFormat } from './cvAiApi'
 import { fetchJobs, type ApiJob } from './opportunitiesApi'
 import type { CVData } from '@/features/cv-builder/types'
@@ -8,9 +8,10 @@ import {
   updateCustomCVBase,
   renameCustomCV,
   getCvDocumentById,
-  patchCvDocument,
+  patchCvContent,
   dbCvToCvData,
-  cvDataToDbCv,
+  createJobTailoredCv,
+  type DbCV,
 } from './documentsApi'
 
 
@@ -62,8 +63,6 @@ export interface CustomCV {
   appliedTo: string
   base_cv: boolean
 }
-
-
 
 
 
@@ -200,16 +199,29 @@ export async function getJobMatches(
   }
 }
 
-export { getCustomCVs, deleteCustomCV, updateCustomCVBase, renameCustomCV }
+export { getCustomCVs, deleteCustomCV, updateCustomCVBase, renameCustomCV, createJobTailoredCv }
 
+/** Fetch a specific CV's content and convert to frontend CVData. */
 export async function getCvContent(id: number): Promise<CVData> {
   const dbCv = await getCvDocumentById(id)
   return dbCvToCvData(dbCv)
 }
 
+/**
+ * Save edited CV content back to the backend using PATCH with ApiCV format.
+ * This replaces the old raw api.patch call and routes through the typed patchCvContent.
+ */
 export async function saveCvContent(id: number, data: CVData): Promise<void> {
-  const payload = cvDataToApiFormat(data)
-  // Send the Custom CV Schema (ApiCV) instead of flat DbCV
-  await api.patch(`/api/documents/cv/${id}/`, payload)
+  await patchCvContent(id, data)
 }
 
+/**
+ * Create an AI-tailored CV for a specific job ID.
+ * Returns the newly created DbCV so the caller can navigate to its edit page.
+ */
+export async function createTailoredCvForJob(jobId: number): Promise<DbCV> {
+  return createJobTailoredCv(jobId)
+}
+
+// Re-export cvDataToApiFormat for backward compatibility
+export { cvDataToApiFormat }

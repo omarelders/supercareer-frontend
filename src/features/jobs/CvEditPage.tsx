@@ -10,8 +10,6 @@ import { SkillsForm } from '@/features/cv-builder/components/SkillsForm'
 import { ProgressBar } from '@/features/cv-builder/components/ProgressBar'
 import type { CVData } from '@/features/cv-builder/types'
 import { getCvContent, saveCvContent } from '@/services/jobsApi'
-import api from '@/services/api'
-import { useAuth } from '@/context/AuthContext'
 import '@/features/cv-builder/cv-builder.css'
 
 const EMPTY_CV: CVData = {
@@ -39,12 +37,10 @@ const STEPS = [
 export default function CvEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   const [cvData, setCvData] = useState<CVData>(EMPTY_CV)
   const [isDataLoading, setIsDataLoading] = useState(true)
-
-  const cvDataStorageKey = `cv_data_${id}`
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const [step, setStep] = useState(1)
   const [saved, setSaved] = useState(false)
@@ -53,7 +49,7 @@ export default function CvEditPage() {
   const stepInfo = STEPS[step - 1]
 
   // -------------------------------------------------------------------------
-  // Load CV content from localStorage (or fall back to profile defaults)
+  // Load CV content via GET /api/documents/cv/{id}/
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!id) {
@@ -65,59 +61,20 @@ export default function CvEditPage() {
 
     async function loadData() {
       setIsDataLoading(true)
+      setLoadError(null)
 
-      const numericId = Number(id)
-
-      // Try to load from backend
       try {
-        const stored = await getCvContent(numericId)
-        if (stored) {
-          if (!cancelled) {
-            setCvData(stored)
-            setIsDataLoading(false)
-          }
-          return
+        const stored = await getCvContent(Number(id))
+        if (!cancelled) {
+          setCvData(stored)
+          setIsDataLoading(false)
         }
       } catch (err) {
         console.error('Failed to load CV content:', err)
-      }
-
-      // 2. No saved content yet — prefill name/title from profile API
-      let profileName = ''
-      let profileTitle = ''
-
-      try {
-        const { data } = await api.get('/api/profile/')
-        if (data) {
-          profileName =
-            data.full_name ||
-            [data.first_name, data.last_name].filter(Boolean).join(' ') ||
-            data.username ||
-            ''
-          profileTitle = data.professional_title || ''
+        if (!cancelled) {
+          setLoadError('Could not load CV data. Starting with an empty template.')
+          setIsDataLoading(false)
         }
-      } catch {
-        // ignore — fallback to auth context below
-      }
-
-      if (!profileName && user) {
-        profileName =
-          (user.full_name as string) ||
-          (user.username as string) ||
-          (user.email as string) ||
-          ''
-      }
-
-      if (!cancelled) {
-        setCvData({
-          ...EMPTY_CV,
-          personal: {
-            ...EMPTY_CV.personal,
-            fullName: profileName,
-            title: profileTitle,
-          },
-        })
-        setIsDataLoading(false)
       }
     }
 
@@ -125,10 +82,10 @@ export default function CvEditPage() {
     return () => {
       cancelled = true
     }
-  }, [id, user])
+  }, [id])
 
   // -------------------------------------------------------------------------
-  // Save
+  // Save via PATCH /api/documents/cv/{id}/ with ApiCV format
   // -------------------------------------------------------------------------
   const handleSave = async () => {
     setIsSaving(true)
@@ -196,6 +153,13 @@ export default function CvEditPage() {
             )}
           </button>
         </div>
+
+        {/* Load error banner */}
+        {loadError && (
+          <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs">
+            {loadError}
+          </div>
+        )}
 
         {/* Two-column layout */}
         <div className="flex flex-col lg:flex-row lg:gap-8 flex-1 min-h-0">
