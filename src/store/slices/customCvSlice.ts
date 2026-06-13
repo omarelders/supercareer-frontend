@@ -16,10 +16,11 @@ import {
 export function mapDbCvToCustomCv(dbCv: DbCV): CustomCV {
   const d = new Date(dbCv.created_at)
   const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const localTitle = typeof window !== 'undefined' ? localStorage.getItem(`cv_title_${dbCv.id}`) : null
   return {
     id: dbCv.id,
     date: dateStr,
-    title: dbCv.professional_title || dbCv.full_name || 'Untitled CV',
+    title: localTitle || dbCv.professional_title || dbCv.full_name || 'Untitled CV',
     appliedTo: dbCv.job ? `Job Matching (ID #${dbCv.job})` : 'General Application',
     base_cv: dbCv.is_base,
   }
@@ -115,6 +116,9 @@ export const renameCV = createAsyncThunk<
   { rejectValue: string }
 >('customCv/renameCV', async ({ id, newTitle }, { rejectWithValue, dispatch }) => {
   try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`cv_title_${id}`, newTitle)
+    }
     const data = await renameCustomCV(id, newTitle)
     return data.map(mapDbCvToCustomCv)
   } catch {
