@@ -15,6 +15,7 @@ interface JobFilterBarProps {
   onLocationChange: (value: LocationFilter) => void
   onTypeChange: (value: TypeFilter) => void
   onMinMatchChange: (value: MatchThreshold) => void
+  onSortChange: (value: 'asc' | 'desc') => void
   onClearFilters: () => void
   onViewModeChange: (value: JobViewMode) => void
 }
@@ -39,6 +40,11 @@ const MATCH_OPTIONS: Array<{ label: string; value: MatchThreshold }> = [
   { label: '95%+', value: 95 },
 ]
 
+const SORT_OPTIONS: Array<{ label: string; value: 'asc' | 'desc' }> = [
+  { label: 'Highest match', value: 'desc' },
+  { label: 'Lowest match', value: 'asc' },
+]
+
 export default function JobFilterBar({
   filters,
   hasActiveFilters,
@@ -46,6 +52,7 @@ export default function JobFilterBar({
   onLocationChange,
   onTypeChange,
   onMinMatchChange,
+  onSortChange,
   onClearFilters,
   onViewModeChange,
 }: JobFilterBarProps) {
@@ -98,6 +105,21 @@ export default function JobFilterBar({
               className="bg-transparent text-sm text-slate-700 outline-none"
             >
               {MATCH_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-medium">
+            <span>Sort</span>
+            <select
+              value={filters.sortOrder}
+              onChange={(event) => onSortChange(event.target.value as 'asc' | 'desc')}
+              className="bg-transparent text-sm text-slate-700 outline-none"
+            >
+              {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

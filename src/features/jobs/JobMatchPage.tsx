@@ -33,7 +33,7 @@ export default function JobMatchPage() {
 
   useEffect(() => {
     dispatch(fetchInitialJobMatches())
-  }, [dispatch, filters.location, filters.type, filters.minMatchPct])
+  }, [dispatch, filters.location, filters.type, filters.minMatchPct, filters.sortOrder])
 
   const cardsLayoutClass =
     viewMode === 'grid'
@@ -51,6 +51,7 @@ export default function JobMatchPage() {
         onLocationChange={(value) => dispatch(setJobFilters({ location: value }))}
         onTypeChange={(value) => dispatch(setJobFilters({ type: value }))}
         onMinMatchChange={(value) => dispatch(setJobFilters({ minMatchPct: value }))}
+        onSortChange={(value) => dispatch(setJobFilters({ sortOrder: value }))}
         onClearFilters={() => dispatch(clearJobFilters())}
         onViewModeChange={(mode) => dispatch(setJobViewMode(mode))}
       />

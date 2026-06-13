@@ -284,37 +284,39 @@ export async function getCvDocumentById(id: number): Promise<DbCV> {
   return data
 }
 
-/**
- * Create a new regular (non-base) CV.
- * Explicitly sets is_base: false to prevent the backend from
- * auto-marking it as the user's Base CV.
- */
 export async function createCvDocument(cvData: CVData): Promise<DbCV> {
-  const flat = buildFlatCvPayload(cvData) as any;
+  const apiPayload = cvDataToApiFormat(cvData);
 
-  // portfolio_url frequently fails Django's strict URLValidator when extracted
-  // from old resumes (e.g. "LinkedIn", partial paths, no scheme).
-  // Always omit it on creation — the full URL is preserved inside the `content`
-  // JSON blob and can be patched back after the record is created.
-  delete flat.portfolio_url;
-
-  // Also drop other optional fields that may be blank to avoid Django validators
-  // rejecting empty strings on fields that don't allow blank.
-  const optionalFields = ['email_address', 'phone_number', 'location', 'professional_summary', 'professional_title'];
-  optionalFields.forEach(field => {
-    if (flat[field] === '') {
-      delete flat[field];
-    }
-  });
-
-  const payload = { ...flat, is_base: false };
+  if (!cvData.personal.url) {
+    delete (apiPayload['Personal Details'] as Partial<ApiPersonalDetails>)['Portfolio / LinkedIn URL'];
+  }
 
   try {
-    const { data } = await api.post<DbCV>('/api/documents/cv/', payload)
-    return data
+    const { data } = await api.post<DbCV>('/api/documents/cv/', apiPayload);
+    
+    if (data?.id) {
+      const flat = buildFlatCvPayload(cvData) as any;
+      flat.is_base = false; // Ensure it remains a regular CV
+      await api.patch<DbCV>(`/api/documents/cv/${data.id}/`, flat).catch(() => {/* non-critical */});
+    }
+
+    return data;
   } catch (error: any) {
-    console.error('[createCvDocument] POST failed:', error?.response?.data || error);
-    throw error;
+    console.error('[createCvDocument] POST with CustomCVSchema failed:', error?.response?.data || error);
+
+    // Fallback: POST with flat fields
+    const flat = buildFlatCvPayload(cvData) as any;
+    delete flat.portfolio_url;
+    const optionalFields = ['email_address', 'phone_number', 'location', 'professional_summary', 'professional_title'];
+    optionalFields.forEach(field => {
+      if (flat[field] === '') {
+        delete flat[field];
+      }
+    });
+
+    const payload = { ...flat, is_base: false };
+    const { data } = await api.post<DbCV>('/api/documents/cv/', payload);
+    return data;
   }
 }
 

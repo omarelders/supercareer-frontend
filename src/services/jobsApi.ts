@@ -40,6 +40,7 @@ export interface JobMatchFilters {
   location?: JobLocation
   type?: JobType
   minMatchPct?: number
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface GetJobMatchesParams {
@@ -184,6 +185,15 @@ export async function getJobMatches(
     if (filters?.type && job.jobType !== filters.type) return false
     if (typeof minMatchPct === 'number' && job.matchPct < minMatchPct) return false
     return true
+  })
+
+  const sortOrder = filters?.sortOrder || 'desc'
+  filteredMatches.sort((a, b) => {
+    if (sortOrder === 'asc') {
+      return a.matchPct - b.matchPct
+    } else {
+      return b.matchPct - a.matchPct
+    }
   })
 
   const start = (safePage - 1) * safePageSize

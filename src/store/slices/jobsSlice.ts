@@ -22,12 +22,14 @@ export interface JobFilterState {
   location: LocationFilter
   type: TypeFilter
   minMatchPct: MatchThreshold
+  sortOrder: 'asc' | 'desc'
 }
 
 export const DEFAULT_JOB_FILTERS: JobFilterState = {
   location: ALL_FILTER_VALUE,
   type: ALL_FILTER_VALUE,
   minMatchPct: 0,
+  sortOrder: 'desc',
 }
 
 interface JobsState {
@@ -68,6 +70,7 @@ function toApiFilters(filters: JobFilterState): JobMatchFilters {
     location: filters.location === ALL_FILTER_VALUE ? undefined : filters.location,
     type: filters.type === ALL_FILTER_VALUE ? undefined : filters.type,
     minMatchPct: filters.minMatchPct === 0 ? undefined : filters.minMatchPct,
+    sortOrder: filters.sortOrder,
   }
 }
 
@@ -231,6 +234,7 @@ export const selectJobsState = (state: RootState) => state.jobs
 export const selectHasActiveJobFilters = (state: RootState) =>
   state.jobs.filters.location !== DEFAULT_JOB_FILTERS.location ||
   state.jobs.filters.type !== DEFAULT_JOB_FILTERS.type ||
-  state.jobs.filters.minMatchPct !== DEFAULT_JOB_FILTERS.minMatchPct
+  state.jobs.filters.minMatchPct !== DEFAULT_JOB_FILTERS.minMatchPct ||
+  state.jobs.filters.sortOrder !== DEFAULT_JOB_FILTERS.sortOrder
 
 export default jobsSlice.reducer
