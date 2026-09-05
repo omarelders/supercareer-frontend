@@ -21,6 +21,7 @@ import JobDetailPage from '@/features/jobs/JobDetailPage'
 import JobMatchPage from '@/features/jobs/JobMatchPage'
 import MarketingPage from '@/features/marketing/MarketingPage'
 import ProfilePage from '@/features/settings/ProfilePage'
+import GoogleOAuthPopup from '@/features/auth/GoogleOAuthPopup'
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import { store } from '@/store/store'
@@ -35,6 +36,7 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path={ROUTES.home} element={<MarketingPage />} />
+              <Route path="/auth/google/popup" element={<GoogleOAuthPopup />} />
 
               <Route element={<AuthLayout />}>
                 <Route path={ROUTES.login} element={<LoginPage />} />

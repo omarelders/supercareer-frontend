@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, UserPlus, ArrowRight, ShieldCheck } from 'lucide-react'
+import { X, UserPlus, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { saveStoredDemoUser, getStoredDemoUser } from '@/demo/demoStorage'
@@ -58,15 +58,15 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-110 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
-        style={{ fontFamily: "'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, sans-serif" }}
+        className="relative w-full max-w-[450px] bg-white rounded-2xl shadow-xl border border-[#c4c7c5] overflow-hidden text-[#1f1f1f]"
+        style={{ fontFamily: "'Google Sans', Roboto, Arial, sans-serif" }}
       >
         {/* Animated Google Linear Progress Bar */}
         {isSigningIn && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-blue-100 overflow-hidden z-20">
-            <div className="h-full bg-blue-600 animate-pulse w-full transition-all duration-700" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-[#d3e3fd] overflow-hidden z-20">
+            <div className="h-full bg-[#0b57d0] animate-pulse w-full" />
           </div>
         )}
 
@@ -75,16 +75,16 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
           type="button"
           onClick={onClose}
           disabled={isSigningIn}
-          className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 p-1.5 text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f2f2f2] rounded-full transition-colors cursor-pointer"
           aria-label="Close dialog"
         >
           <X size={18} />
         </button>
 
-        <div className="p-8">
+        <div className="p-7 sm:p-8">
           {/* Google Wordmark Logo */}
-          <div className="flex justify-center mb-4">
-            <svg className="h-7 w-auto" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div className="mb-4">
+            <svg className="h-6 w-auto" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.24 10.87v3.25h5.18c-.2 1.35-1.57 3.96-5.18 3.96-3.12 0-5.67-2.58-5.67-5.76s2.55-5.76 5.67-5.76c1.78 0 2.97.76 3.65 1.41l2.57-2.47C13.82 3.96 11.75 3 9.24 3 4.29 3 .25 7.04.25 12s4.04 9 8.99 9c5.18 0 8.62-3.64 8.62-8.77 0-.59-.06-1.04-.14-1.36H9.24z" fill="#4285F4"/>
               <path d="M26.22 12.38c0-3.32-2.52-5.73-5.66-5.73s-5.66 2.41-5.66 5.73c0 3.29 2.52 5.73 5.66 5.73s5.66-2.44 5.66-5.73zm-2.48 0c0 2.09-1.48 3.52-3.18 3.52-1.7 0-3.18-1.43-3.18-3.52 0-2.11 1.48-3.54 3.18-3.54 1.7 0 3.18 1.43 3.18 3.54z" fill="#EA4335"/>
               <path d="M38.64 12.38c0-3.32-2.52-5.73-5.66-5.73s-5.66 2.41-5.66 5.73c0 3.29 2.52 5.73 5.66 5.73s5.66-2.44 5.66-5.73zm-2.48 0c0 2.09-1.48 3.52-3.18 3.52-1.7 0-3.18-1.43-3.18-3.52 0-2.11 1.48-3.54 3.18-3.54 1.7 0 3.18 1.43 3.18 3.54z" fill="#FBBC05"/>
@@ -94,92 +94,86 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
             </svg>
           </div>
 
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-normal text-slate-800 tracking-tight">Choose an account</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              to continue to <span className="font-semibold text-slate-800">Super Career AI</span>
-            </p>
-          </div>
+          <h2 className="text-[24px] font-normal leading-[32px] text-[#1f1f1f]">
+            Choose an account
+          </h2>
+          <p className="text-[16px] font-normal leading-[24px] text-[#444746] mt-1 mb-6">
+            to continue to <span className="font-medium text-[#1f1f1f]">Super Career AI</span>
+          </p>
 
-          {/* Account Chooser Card / List */}
-          <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 overflow-hidden mb-6">
-            {/* Account 1: Omar Elders (Default) */}
-            <button
-              type="button"
-              disabled={isSigningIn}
-              onClick={() => handleSelectAccount('Omar Elders', 'omar.elders@gmail.com')}
-              className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left hover:bg-slate-50 transition-colors cursor-pointer group disabled:opacity-60"
+          {/* Account Chooser Card */}
+          <div className="border border-[#c4c7c5] rounded-xl divide-y divide-[#e0e2ec] overflow-hidden mb-6 bg-white">
+            {/* Account 1: Omar Elders */}
+            <div
+              onClick={() => !isSigningIn && handleSelectAccount('Omar Elders', 'omar.elders@gmail.com')}
+              className="flex items-center gap-3.5 px-4 py-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors"
             >
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+              <div className="w-8 h-8 rounded-full bg-[#1a73e8] text-white flex items-center justify-center font-medium text-sm shrink-0">
                 O
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-800 truncate">Omar Elders</p>
-                  <span className="text-[10px] font-medium bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Default</span>
+                <div className="text-[14px] font-medium leading-[20px] text-[#1f1f1f] truncate">
+                  Omar Elders
                 </div>
-                <p className="text-xs text-slate-500 truncate">omar.elders@gmail.com</p>
+                <div className="text-[12px] font-normal leading-[16px] text-[#444746] truncate">
+                  omar.elders@gmail.com
+                </div>
               </div>
-              {selectedEmail === 'omar.elders@gmail.com' && isSigningIn ? (
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
-              ) : (
-                <div className="w-2 h-2 rounded-full bg-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+              {selectedEmail === 'omar.elders@gmail.com' && isSigningIn && (
+                <div className="w-4 h-4 border-2 border-[#0b57d0] border-t-transparent rounded-full animate-spin shrink-0" />
               )}
-            </button>
+            </div>
 
             {/* Account 2: Custom Account Option */}
             {!customMode ? (
-              <button
-                type="button"
-                disabled={isSigningIn}
-                onClick={() => setCustomMode(true)}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left hover:bg-slate-50 transition-colors cursor-pointer group disabled:opacity-60"
+              <div
+                onClick={() => !isSigningIn && setCustomMode(true)}
+                className="flex items-center gap-3.5 px-4 py-3.5 cursor-pointer hover:bg-[#f8f9fa] transition-colors"
               >
-                <div className="w-10 h-10 rounded-full border border-slate-300 bg-white text-slate-500 flex items-center justify-center shrink-0 group-hover:border-slate-400 transition-colors">
-                  <UserPlus size={18} />
+                <div className="w-8 h-8 rounded-full border border-[#747775] text-[#444746] flex items-center justify-center shrink-0">
+                  <UserPlus size={15} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-700">Use another account</p>
-                  <p className="text-xs text-slate-400">Sign in with any custom Google account</p>
+                <div className="flex-1 min-w-0 text-[14px] font-medium leading-[20px] text-[#1f1f1f]">
+                  Use another account
                 </div>
-              </button>
+              </div>
             ) : (
-              <form onSubmit={handleCustomSubmit} className="p-4 bg-slate-50/70 space-y-3 animate-in fade-in duration-150">
+              <form onSubmit={handleCustomSubmit} className="p-4 bg-[#f8f9fa] space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+                  <label className="block text-[11px] font-medium text-[#444746] mb-1">Full Name</label>
                   <input
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder="e.g. John Client"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 text-sm bg-white border border-[#c4c7c5] rounded-md focus:outline-none focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Google Email *</label>
+                  <label className="block text-[11px] font-medium text-[#444746] mb-1">Google Email *</label>
                   <input
                     type="email"
                     required
                     value={customEmail}
                     onChange={(e) => setCustomEmail(e.target.value)}
                     placeholder="client@gmail.com"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 text-sm bg-white border border-[#c4c7c5] rounded-md focus:outline-none focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0]"
                   />
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
                     onClick={() => setCustomMode(false)}
-                    className="text-xs font-medium text-slate-500 hover:text-slate-700 cursor-pointer"
+                    className="text-xs text-[#0b57d0] hover:underline cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!customEmail || isSigningIn}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0b57d0] hover:bg-[#0842a0] text-white text-xs font-medium rounded-md disabled:opacity-50 transition-colors cursor-pointer"
                   >
-                    {isSigningIn ? 'Signing in…' : 'Continue'} <ArrowRight size={13} />
+                    {isSigningIn ? 'Signing in…' : 'Continue'} <ArrowRight size={12} />
                   </button>
                 </div>
               </form>
@@ -187,23 +181,20 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
           </div>
 
           {/* Google Disclaimer */}
-          <div className="text-[12px] text-slate-500 leading-relaxed space-y-2 border-t border-slate-100 pt-4">
-            <p className="flex items-start gap-1.5">
-              <ShieldCheck size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span>
-                To continue, Google will share your name, email address, language preference, and profile picture with <strong>Super Career AI</strong>.
-              </span>
-            </p>
-          </div>
+          <p className="text-[12px] font-normal leading-[16px] text-[#444746]">
+            To continue, Google will share your name, email address, language preference, and profile picture with Super Career AI. Before using this app, you can review Super Career AI’s{' '}
+            <span className="text-[#0b57d0] hover:underline cursor-pointer">privacy policy</span> and{' '}
+            <span className="text-[#0b57d0] hover:underline cursor-pointer">terms of service</span>.
+          </p>
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-50 border-t border-slate-200/80 px-8 py-3 flex items-center justify-between text-xs text-slate-500">
+        <div className="bg-[#f8f9fa] border-t border-[#e0e2ec] px-7 py-3 flex items-center justify-between text-[12px] text-[#444746]">
           <span>English (United States)</span>
           <div className="flex items-center gap-4">
-            <span className="hover:text-slate-700 transition-colors cursor-pointer">Help</span>
-            <span className="hover:text-slate-700 transition-colors cursor-pointer">Privacy</span>
-            <span className="hover:text-slate-700 transition-colors cursor-pointer">Terms</span>
+            <span className="hover:text-[#1f1f1f] cursor-pointer">Help</span>
+            <span className="hover:text-[#1f1f1f] cursor-pointer">Privacy</span>
+            <span className="hover:text-[#1f1f1f] cursor-pointer">Terms</span>
           </div>
         </div>
       </div>

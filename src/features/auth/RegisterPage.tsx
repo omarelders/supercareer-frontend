@@ -134,6 +134,43 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false)
 
+  // ── Listen for Google OAuth popup success ──
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+        window.location.href = '/dashboard'
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  const handleGoogleSignIn = () => {
+    const width = 480
+    const height = 580
+    const left = window.screenX + Math.max(0, (window.outerWidth - width) / 2)
+    const top = window.screenY + Math.max(0, (window.outerHeight - height) / 2)
+
+    const popup = window.open(
+      '/auth/google/popup',
+      'GoogleSignIn',
+      `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no,resizable=yes`
+    )
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      setIsGoogleModalOpen(true)
+    } else {
+      const timer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(timer)
+          if (localStorage.getItem('access')) {
+            window.location.href = '/dashboard'
+          }
+        }
+      }, 400)
+    }
+  }
+
   // After showing the success screen, redirect to /login in 3 s
   useEffect(() => {
     if (!success) return
@@ -473,7 +510,7 @@ export default function RegisterPage() {
                 <button
                   id="register-google-btn"
                   type="button"
-                  onClick={() => setIsGoogleModalOpen(true)}
+                  onClick={handleGoogleSignIn}
                   className="flex items-center justify-center gap-2.5 py-3 px-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors w-full cursor-pointer hover:border-slate-300 shadow-2xs"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24">
