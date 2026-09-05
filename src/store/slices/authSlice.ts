@@ -54,14 +54,15 @@ import { getStoredDemoUser } from '@/demo/demoStorage'
 
 function getInitialState(): AuthState {
   try {
+    const isLoggedOut = localStorage.getItem('demo_logged_out') === 'true'
     const access = localStorage.getItem('access')
     const stored = localStorage.getItem('user')
-    if (access && stored) {
-      return { isAuthenticated: true, user: JSON.parse(stored), loading: true }
+    if (!isLoggedOut && access && stored) {
+      return { isAuthenticated: true, user: JSON.parse(stored), loading: false }
     }
     // ============================================================================
     // >>> DEMO_MOCK_DATA_START <<<
-    if (IS_DEMO_MODE) {
+    if (IS_DEMO_MODE && !isLoggedOut) {
       const demoUser = getStoredDemoUser()
       localStorage.setItem('access', DEMO_TOKENS.access)
       localStorage.setItem('refresh', DEMO_TOKENS.refresh)
@@ -73,7 +74,7 @@ function getInitialState(): AuthState {
   } catch {
     // ignore
   }
-  return { isAuthenticated: false, user: null, loading: true }
+  return { isAuthenticated: false, user: null, loading: false }
 }
 
 export const initializeAuth = createAsyncThunk(
@@ -82,12 +83,17 @@ export const initializeAuth = createAsyncThunk(
     // ============================================================================
     // >>> DEMO_MOCK_DATA_START <<<
     if (IS_DEMO_MODE) {
-      const demoUser = getStoredDemoUser()
-      localStorage.setItem('access', DEMO_TOKENS.access)
-      localStorage.setItem('refresh', DEMO_TOKENS.refresh)
-      localStorage.setItem('user', JSON.stringify(demoUser))
-      api.defaults.headers.common['Authorization'] = `Bearer ${DEMO_TOKENS.access}`
-      return { isAuthenticated: true }
+      const isLoggedOut = localStorage.getItem('demo_logged_out') === 'true'
+      if (isLoggedOut) {
+        return { isAuthenticated: false }
+      }
+      const access = localStorage.getItem('access')
+      const stored = localStorage.getItem('user')
+      if (access && stored) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${access}`
+        return { isAuthenticated: true }
+      }
+      return { isAuthenticated: false }
     }
     // >>> DEMO_MOCK_DATA_END <<<
     // ============================================================================
@@ -120,6 +126,7 @@ const persistSession = (access: string, refresh: string, userData: AuthUser) => 
 export const loginThunk = createAsyncThunk(
   'auth/login',
   async ({ email, password }: Record<string, string>) => {
+    localStorage.removeItem('demo_logged_out')
     // ============================================================================
     // >>> DEMO_MOCK_DATA_START <<<
     if (IS_DEMO_MODE) {
@@ -158,6 +165,16 @@ export const loginThunk = createAsyncThunk(
 export const googleAuthThunk = createAsyncThunk(
   'auth/googleAuth',
   async ({ id_token, role, register = false }: { id_token: string; role?: string; register?: boolean }) => {
+    localStorage.removeItem('demo_logged_out')
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      const demoUser = getStoredDemoUser()
+      persistSession(DEMO_TOKENS.access, DEMO_TOKENS.refresh, demoUser)
+      return demoUser
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
     const response = register
       ? await apiGoogleRegister(id_token, role ?? 'job_seeker')
       : await apiGoogleLogin(id_token, role)
@@ -179,10 +196,23 @@ export const googleAuthThunk = createAsyncThunk(
 export const logoutThunk = createAsyncThunk(
   'auth/logout',
   async () => {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      localStorage.removeItem('access')
+      localStorage.removeItem('refresh')
+      localStorage.removeItem('user')
+      localStorage.setItem('demo_logged_out', 'true')
+      delete api.defaults.headers.common['Authorization']
+      return
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+
     const refresh = localStorage.getItem('refresh')
     try {
       if (refresh) {
-        await api.post('/api/logout/', { refresh })
+        await api.post('/api/logout/', { refresh }, { timeout: 2000 })
       }
     } catch {
       // Ignore server errors
@@ -190,6 +220,7 @@ export const logoutThunk = createAsyncThunk(
       localStorage.removeItem('access')
       localStorage.removeItem('refresh')
       localStorage.removeItem('user')
+      localStorage.setItem('demo_logged_out', 'true')
       delete api.defaults.headers.common['Authorization']
     }
   }
@@ -205,6 +236,11 @@ export const authSlice = createSlice({
       localStorage.setItem('user', JSON.stringify(state.user))
     },
     forceLogoutAction: (state) => {
+      localStorage.removeItem('access')
+      localStorage.removeItem('refresh')
+      localStorage.removeItem('user')
+      localStorage.setItem('demo_logged_out', 'true')
+      delete api.defaults.headers.common['Authorization']
       state.isAuthenticated = false
       state.user = null
       state.loading = false
@@ -237,6 +273,12 @@ export const authSlice = createSlice({
       .addCase(logoutThunk.fulfilled, (state) => {
         state.isAuthenticated = false
         state.user = null
+        state.loading = false
+      })
+      .addCase(logoutThunk.rejected, (state) => {
+        state.isAuthenticated = false
+        state.user = null
+        state.loading = false
       })
   },
 })

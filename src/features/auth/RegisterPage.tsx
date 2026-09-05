@@ -199,6 +199,7 @@ export default function RegisterPage() {
     // ============================================================================
     // >>> DEMO_MOCK_DATA_START <<<
     if (IS_DEMO_MODE) {
+      localStorage.removeItem('demo_logged_out')
       saveStoredDemoUser({
         ...DEMO_USER,
         email: values.email,
@@ -232,6 +233,7 @@ export default function RegisterPage() {
       // ============================================================================
       // >>> DEMO_MOCK_DATA_START <<<
       console.warn('[RegisterPage] Server offline, falling back to Demo Mode registration')
+      localStorage.removeItem('demo_logged_out')
       saveStoredDemoUser({
         ...DEMO_USER,
         email: values.email,

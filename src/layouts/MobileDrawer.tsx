@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/config/routes'
 import { X, LogOut, ChevronDown, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
 import Logo from '../components/Logo'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -101,6 +100,7 @@ interface MobileDrawerProps {
 
 export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const displayName =
     (user?.full_name as string | undefined) ??
@@ -110,6 +110,15 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
   const role = (user?.role as string | undefined) ?? 'Member'
   const initials = getInitials(displayName)
+
+  const handleLogout = async () => {
+    onClose()
+    try {
+      await logout()
+    } finally {
+      navigate(ROUTES.login, { replace: true })
+    }
+  }
 
   // Lock body scroll while drawer is open
   useEffect(() => {
@@ -192,8 +201,8 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
             </Link>
             <button
               aria-label="Log out"
-              onClick={() => { void logout(); onClose() }}
-              className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 shrink-0"
+              onClick={() => void handleLogout()}
+              className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 shrink-0 cursor-pointer"
             >
               <LogOut size={16} />
             </button>

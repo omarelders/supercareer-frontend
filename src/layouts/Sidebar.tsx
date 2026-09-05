@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/config/routes'
 import {
   ChevronDown,
@@ -94,6 +94,7 @@ function getInitials(name: string): string {
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const displayName =
     (user?.full_name as string | undefined) ??
@@ -103,6 +104,14 @@ export default function Sidebar() {
 
   const role = (user?.role as string | undefined) ?? 'Member'
   const initials = getInitials(displayName)
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      navigate(ROUTES.login, { replace: true })
+    }
+  }
 
   return (
     <aside className="hidden md:flex w-50 shrink-0 flex-col h-full border-r border-slate-200 bg-white">
@@ -147,9 +156,9 @@ export default function Sidebar() {
           </Link>
           <button
             aria-label="Log out"
-            onClick={() => void logout()}
+            onClick={() => void handleLogout()}
             title="Log out"
-            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50 shrink-0"
+            className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50 shrink-0 cursor-pointer"
           >
             <LogOut size={15} />
           </button>
