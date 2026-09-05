@@ -149,8 +149,8 @@ export async function refreshProjects(): Promise<ProjectsRefreshResponse> {
   if (IS_DEMO_MODE) {
     await new Promise((resolve) => setTimeout(resolve, 600))
     return {
-      message: 'Projects successfully synchronized! 5 fresh opportunities indexed.',
-      imported_count: 5,
+      message: 'Projects successfully synchronized! 20 fresh opportunities indexed.',
+      imported_count: 20,
     }
   }
   // >>> DEMO_MOCK_DATA_END <<<

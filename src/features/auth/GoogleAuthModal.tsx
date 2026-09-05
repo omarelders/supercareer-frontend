@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { User, Lock, X, ArrowRight, Zap } from 'lucide-react'
+import { User, X, ArrowRight, Zap } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { saveStoredDemoUser, getStoredDemoUser } from '@/demo/demoStorage'
@@ -105,22 +105,16 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
         className="relative w-full max-w-[460px] bg-[#131314] text-[#e3e3e3] rounded-3xl shadow-2xl border border-[#3c4043] overflow-hidden select-none flex flex-col"
         style={{ fontFamily: "'Google Sans', Roboto, Arial, sans-serif" }}
       >
-        {/* Simulated Browser Address Bar */}
-        <div className="h-10 bg-[#1e1f20] border-b border-[#2d2f31] flex items-center justify-between px-3 text-xs text-[#9aa0a6] shrink-0">
-          <div className="flex items-center gap-2 flex-1 max-w-[380px] bg-[#131314] border border-[#3c4043] rounded-full px-3 py-1 text-[11px] truncate">
-            <Lock size={12} className="text-[#9aa0a6] shrink-0" />
-            <span className="truncate text-[#bdc1c6]">accounts.google.com/v3/signin/accountchooser</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSigningIn}
-            className="p-1 text-[#9aa0a6] hover:text-[#e3e3e3] hover:bg-[#282a2c] rounded-full transition-colors cursor-pointer"
-            aria-label="Close"
-          >
-            <X size={15} />
-          </button>
-        </div>
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isSigningIn}
+          className="absolute right-4 top-4 p-1.5 text-[#9aa0a6] hover:text-[#e3e3e3] hover:bg-[#282a2c] rounded-full transition-colors cursor-pointer z-10"
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
 
         {/* Top Google Loading Bar */}
         {isSigningIn && (

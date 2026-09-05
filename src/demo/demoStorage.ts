@@ -201,7 +201,12 @@ export function updateStoredDemoProposalStatus(
 export function getStoredDemoProjects(): ApiProject[] {
   try {
     const raw = localStorage.getItem(KEY_PROJECTS)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length >= DEMO_PROJECTS.length) {
+        return parsed
+      }
+    }
   } catch {
     // fallback
   }
@@ -221,7 +226,12 @@ export function saveStoredDemoProjects(projects: ApiProject[]): void {
 export function getStoredDemoJobs(): ApiJob[] {
   try {
     const raw = localStorage.getItem(KEY_JOBS)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length >= DEMO_JOBS.length) {
+        return parsed
+      }
+    }
   } catch {
     // fallback
   }

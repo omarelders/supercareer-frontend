@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Lock, ArrowRight, Zap } from 'lucide-react'
+import { User, ArrowRight, Zap } from 'lucide-react'
 import { saveStoredDemoUser, getStoredDemoUser } from '@/demo/demoStorage'
 import { DEMO_TOKENS } from '@/demo/demoData'
 
@@ -107,17 +107,6 @@ export default function GoogleOAuthPopup() {
       className="min-h-screen bg-[#131314] text-[#e3e3e3] flex flex-col justify-between select-none"
       style={{ fontFamily: "'Google Sans', Roboto, Arial, sans-serif" }}
     >
-      {/* Simulated Browser Address Bar for maximum realism */}
-      <div className="h-10 bg-[#1e1f20] border-b border-[#2d2f31] flex items-center justify-between px-3 text-xs text-[#9aa0a6] shrink-0">
-        <div className="flex items-center gap-2 flex-1 max-w-[420px] bg-[#131314] border border-[#3c4043] rounded-full px-3 py-1 text-[11px] truncate">
-          <Lock size={12} className="text-[#9aa0a6] shrink-0" />
-          <span className="truncate text-[#bdc1c6]">accounts.google.com/v3/signin/accountchooser?access_type=offline&client_id=supercareer</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#34a853]" title="Secure connection" />
-        </div>
-      </div>
-
       {/* Top Google Loading Bar */}
       {isSigningIn && (
         <div className="h-1 bg-[#1a73e8]/20 overflow-hidden shrink-0">
