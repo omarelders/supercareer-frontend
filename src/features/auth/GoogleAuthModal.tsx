@@ -1,8 +1,51 @@
 import React, { useState } from 'react'
-import { X, UserPlus, ArrowRight } from 'lucide-react'
+import { User, Lock, X, ArrowRight, Zap } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { saveStoredDemoUser, getStoredDemoUser } from '@/demo/demoStorage'
+
+interface GoogleAccountItem {
+  id: string
+  name: string
+  email: string
+  avatarType: 'image' | 'letter'
+  avatarBg?: string
+  avatarText?: string
+  avatarImg?: string
+}
+
+const ACCOUNTS: GoogleAccountItem[] = [
+  {
+    id: 'omar-1',
+    name: 'Omar Elders',
+    email: 'omarelders1968@gmail.com',
+    avatarType: 'image',
+    avatarImg: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&crop=face',
+  },
+  {
+    id: 'omar-2',
+    name: 'omar elders',
+    email: 'omarelders25@gmail.com',
+    avatarType: 'image',
+    avatarImg: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=80&h=80&fit=crop&crop=face',
+  },
+  {
+    id: 'omar-3',
+    name: 'omar elders',
+    email: 'omarelders.dev@gmail.com',
+    avatarType: 'letter',
+    avatarBg: '#5f6368',
+    avatarText: 'o',
+  },
+  {
+    id: 'ali-1',
+    name: 'ali eldeeb',
+    email: 'alieldeeb1244@gmail.com',
+    avatarType: 'letter',
+    avatarBg: '#e34426',
+    avatarText: 'a',
+  },
+]
 
 interface GoogleAuthModalProps {
   isOpen: boolean
@@ -25,7 +68,6 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
     setSelectedEmail(email)
     setIsSigningIn(true)
 
-    // Simulate authentic Google OAuth network latency
     setTimeout(async () => {
       try {
         const currentUser = getStoredDemoUser()
@@ -47,7 +89,7 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
         console.error('Google sign in error:', err)
         setIsSigningIn(false)
       }
-    }, 750)
+    }, 650)
   }
 
   const handleCustomSubmit = (e: React.FormEvent) => {
@@ -58,143 +100,182 @@ export default function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-[450px] bg-white rounded-2xl shadow-xl border border-[#c4c7c5] overflow-hidden text-[#1f1f1f]"
+        className="relative w-full max-w-[460px] bg-[#131314] text-[#e3e3e3] rounded-3xl shadow-2xl border border-[#3c4043] overflow-hidden select-none flex flex-col"
         style={{ fontFamily: "'Google Sans', Roboto, Arial, sans-serif" }}
       >
-        {/* Animated Google Linear Progress Bar */}
+        {/* Simulated Browser Address Bar */}
+        <div className="h-10 bg-[#1e1f20] border-b border-[#2d2f31] flex items-center justify-between px-3 text-xs text-[#9aa0a6] shrink-0">
+          <div className="flex items-center gap-2 flex-1 max-w-[380px] bg-[#131314] border border-[#3c4043] rounded-full px-3 py-1 text-[11px] truncate">
+            <Lock size={12} className="text-[#9aa0a6] shrink-0" />
+            <span className="truncate text-[#bdc1c6]">accounts.google.com/v3/signin/accountchooser</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSigningIn}
+            className="p-1 text-[#9aa0a6] hover:text-[#e3e3e3] hover:bg-[#282a2c] rounded-full transition-colors cursor-pointer"
+            aria-label="Close"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Top Google Loading Bar */}
         {isSigningIn && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#d3e3fd] overflow-hidden z-20">
-            <div className="h-full bg-[#0b57d0] animate-pulse w-full" />
+          <div className="h-1 bg-[#1a73e8]/20 overflow-hidden shrink-0">
+            <div className="h-full bg-[#8ab4f8] animate-pulse w-full" />
           </div>
         )}
 
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={isSigningIn}
-          className="absolute right-3.5 top-3.5 p-1.5 text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f2f2f2] rounded-full transition-colors cursor-pointer"
-          aria-label="Close dialog"
-        >
-          <X size={18} />
-        </button>
-
-        <div className="p-7 sm:p-8">
-          {/* Google Wordmark Logo */}
-          <div className="mb-4">
-            <svg className="h-6 w-auto" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.24 10.87v3.25h5.18c-.2 1.35-1.57 3.96-5.18 3.96-3.12 0-5.67-2.58-5.67-5.76s2.55-5.76 5.67-5.76c1.78 0 2.97.76 3.65 1.41l2.57-2.47C13.82 3.96 11.75 3 9.24 3 4.29 3 .25 7.04.25 12s4.04 9 8.99 9c5.18 0 8.62-3.64 8.62-8.77 0-.59-.06-1.04-.14-1.36H9.24z" fill="#4285F4"/>
-              <path d="M26.22 12.38c0-3.32-2.52-5.73-5.66-5.73s-5.66 2.41-5.66 5.73c0 3.29 2.52 5.73 5.66 5.73s5.66-2.44 5.66-5.73zm-2.48 0c0 2.09-1.48 3.52-3.18 3.52-1.7 0-3.18-1.43-3.18-3.52 0-2.11 1.48-3.54 3.18-3.54 1.7 0 3.18 1.43 3.18 3.54z" fill="#EA4335"/>
-              <path d="M38.64 12.38c0-3.32-2.52-5.73-5.66-5.73s-5.66 2.41-5.66 5.73c0 3.29 2.52 5.73 5.66 5.73s5.66-2.44 5.66-5.73zm-2.48 0c0 2.09-1.48 3.52-3.18 3.52-1.7 0-3.18-1.43-3.18-3.52 0-2.11 1.48-3.54 3.18-3.54 1.7 0 3.18 1.43 3.18 3.54z" fill="#FBBC05"/>
-              <path d="M50.48 7.02v1.07h-.09c-.58-.69-1.68-1.3-3.08-1.3-2.93 0-5.59 2.56-5.59 5.75 0 3.17 2.66 5.73 5.59 5.73 1.4 0 2.5-.61 3.08-1.32h.09v.82c0 2.18-1.17 3.36-3.05 3.36-1.53 0-2.48-1.1-2.87-2.02l-2.16.9c.63 1.51 2.29 3.33 5.03 3.33 2.92 0 5.4-1.72 5.4-5.99V6.99h-2.35v.03zm-2.92 9.07c-1.68 0-3.05-1.43-3.05-3.52 0-2.11 1.37-3.54 3.05-3.54 1.66 0 2.96 1.45 2.96 3.54 0 2.07-1.3 3.52-2.96 3.52z" fill="#4285F4"/>
-              <path d="M54.51 3.5h2.46v14.49h-2.46V3.5z" fill="#34A853"/>
-              <path d="M66.42 14.54l1.93 1.29c-.63.93-2.13 2.55-4.73 2.55-3.23 0-5.64-2.51-5.64-5.73 0-3.41 2.45-5.73 5.37-5.73 2.94 0 4.38 2.37 4.85 3.65l.27.7-7.64 3.16c.59 1.16 1.51 1.75 2.81 1.75 1.3 0 2.19-.64 2.78-1.64zm-5.79-2.35l5.1-2.12c-.29-.73-1.14-1.24-2.17-1.24-1.31 0-3.14 1.16-2.93 3.36z" fill="#EA4335"/>
-            </svg>
-          </div>
-
-          <h2 className="text-[24px] font-normal leading-[32px] text-[#1f1f1f]">
-            Choose an account
-          </h2>
-          <p className="text-[16px] font-normal leading-[24px] text-[#444746] mt-1 mb-6">
-            to continue to <span className="font-medium text-[#1f1f1f]">Super Career AI</span>
-          </p>
-
-          {/* Account Chooser Card */}
-          <div className="border border-[#c4c7c5] rounded-xl divide-y divide-[#e0e2ec] overflow-hidden mb-6 bg-white">
-            {/* Account 1: Omar Elders */}
-            <div
-              onClick={() => !isSigningIn && handleSelectAccount('Omar Elders', 'omar.elders@gmail.com')}
-              className="flex items-center gap-3.5 px-4 py-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors"
-            >
-              <div className="w-8 h-8 rounded-full bg-[#1a73e8] text-white flex items-center justify-center font-medium text-sm shrink-0">
-                O
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-medium leading-[20px] text-[#1f1f1f] truncate">
-                  Omar Elders
-                </div>
-                <div className="text-[12px] font-normal leading-[16px] text-[#444746] truncate">
-                  omar.elders@gmail.com
-                </div>
-              </div>
-              {selectedEmail === 'omar.elders@gmail.com' && isSigningIn && (
-                <div className="w-4 h-4 border-2 border-[#0b57d0] border-t-transparent rounded-full animate-spin shrink-0" />
-              )}
+        <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
+          <div>
+            {/* Header with Google G logo & "Sign in with Google" */}
+            <div className="flex items-center gap-3 mb-6">
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              <span className="text-[15px] font-medium text-[#e3e3e3]">Sign in with Google</span>
             </div>
 
-            {/* Account 2: Custom Account Option */}
-            {!customMode ? (
-              <div
-                onClick={() => !isSigningIn && setCustomMode(true)}
-                className="flex items-center gap-3.5 px-4 py-3.5 cursor-pointer hover:bg-[#f8f9fa] transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full border border-[#747775] text-[#444746] flex items-center justify-center shrink-0">
-                  <UserPlus size={15} />
+            {/* Super Career AI App Icon */}
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm mb-4">
+              <Zap size={24} className="fill-white text-white" />
+            </div>
+
+            {/* Title & Subtitle */}
+            <h2 className="text-[32px] font-normal text-[#e3e3e3] leading-tight tracking-tight">
+              Choose an account
+            </h2>
+            <p className="text-[15px] text-[#e3e3e3] mt-2 mb-6">
+              to continue to <span className="text-[#8ab4f8] font-medium">Super Career AI</span>
+            </p>
+
+            {/* Accounts List */}
+            <div className="space-y-0.5">
+              {ACCOUNTS.map((acc) => (
+                <div key={acc.id} className="border-b border-[#3c4043] last:border-b-0">
+                  <div
+                    onClick={() => !isSigningIn && handleSelectAccount(acc.name, acc.email)}
+                    className="flex items-center gap-3.5 px-3 py-3 rounded-2xl cursor-pointer hover:bg-[#282a2c] transition-colors -mx-1.5"
+                  >
+                    {/* Avatar */}
+                    {acc.avatarType === 'image' && acc.avatarImg ? (
+                      <img
+                        src={acc.avatarImg}
+                        alt={acc.name}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[#5f6368]"
+                      />
+                    ) : (
+                      <div
+                        style={{ backgroundColor: acc.avatarBg || '#5f6368' }}
+                        className="w-8 h-8 rounded-full text-white flex items-center justify-center font-medium text-sm shrink-0"
+                      >
+                        {acc.avatarText}
+                      </div>
+                    )}
+
+                    {/* Name & Email */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-medium leading-[20px] text-[#e3e3e3] truncate">
+                        {acc.name}
+                      </div>
+                      <div className="text-[13px] font-normal leading-[16px] text-[#9aa0a6] truncate">
+                        {acc.email}
+                      </div>
+                    </div>
+
+                    {/* Loading Spinner */}
+                    {selectedEmail === acc.email && isSigningIn && (
+                      <div className="w-4 h-4 border-2 border-[#8ab4f8] border-t-transparent rounded-full animate-spin shrink-0" />
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 text-[14px] font-medium leading-[20px] text-[#1f1f1f]">
-                  Use another account
-                </div>
+              ))}
+
+              {/* Use Another Account Row */}
+              <div className="border-t border-[#3c4043] pt-0.5">
+                {!customMode ? (
+                  <div
+                    onClick={() => !isSigningIn && setCustomMode(true)}
+                    className="flex items-center gap-3.5 px-3 py-3 rounded-2xl cursor-pointer hover:bg-[#282a2c] transition-colors -mx-1.5"
+                  >
+                    <div className="w-8 h-8 rounded-full border border-[#5f6368] text-[#e3e3e3] flex items-center justify-center shrink-0">
+                      <User size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0 text-[15px] font-medium text-[#e3e3e3]">
+                      Use another account
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCustomSubmit} className="p-4 bg-[#1e1f20] rounded-xl space-y-3 mt-2 border border-[#3c4043]">
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#9aa0a6] mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={customName}
+                        onChange={(e) => setCustomName(e.target.value)}
+                        placeholder="e.g. John Doe"
+                        className="w-full px-3 py-1.5 text-sm bg-[#131314] text-[#e3e3e3] border border-[#3c4043] rounded-md focus:outline-none focus:border-[#8ab4f8]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#9aa0a6] mb-1">Google Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={customEmail}
+                        onChange={(e) => setCustomEmail(e.target.value)}
+                        placeholder="name@gmail.com"
+                        className="w-full px-3 py-1.5 text-sm bg-[#131314] text-[#e3e3e3] border border-[#3c4043] rounded-md focus:outline-none focus:border-[#8ab4f8]"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setCustomMode(false)}
+                        className="text-xs text-[#8ab4f8] hover:underline cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!customEmail || isSigningIn}
+                        className="flex items-center gap-1.5 px-4 py-1.5 bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#131314] text-xs font-semibold rounded-md disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        {isSigningIn ? 'Signing in…' : 'Continue'} <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
-            ) : (
-              <form onSubmit={handleCustomSubmit} className="p-4 bg-[#f8f9fa] space-y-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-[#444746] mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="e.g. John Client"
-                    className="w-full px-3 py-1.5 text-sm bg-white border border-[#c4c7c5] rounded-md focus:outline-none focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-[#444746] mb-1">Google Email *</label>
-                  <input
-                    type="email"
-                    required
-                    value={customEmail}
-                    onChange={(e) => setCustomEmail(e.target.value)}
-                    placeholder="client@gmail.com"
-                    className="w-full px-3 py-1.5 text-sm bg-white border border-[#c4c7c5] rounded-md focus:outline-none focus:border-[#0b57d0] focus:ring-1 focus:ring-[#0b57d0]"
-                  />
-                </div>
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setCustomMode(false)}
-                    className="text-xs text-[#0b57d0] hover:underline cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!customEmail || isSigningIn}
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0b57d0] hover:bg-[#0842a0] text-white text-xs font-medium rounded-md disabled:opacity-50 transition-colors cursor-pointer"
-                  >
-                    {isSigningIn ? 'Signing in…' : 'Continue'} <ArrowRight size={12} />
-                  </button>
-                </div>
-              </form>
-            )}
+            </div>
+
+            {/* Disclaimer text */}
+            <p className="text-[13px] text-[#9aa0a6] leading-relaxed mt-7 mb-4">
+              Before using this app, you can review Super Career AI's{' '}
+              <span className="text-[#8ab4f8] hover:underline cursor-pointer">Privacy Policy</span> and{' '}
+              <span className="text-[#8ab4f8] hover:underline cursor-pointer">Terms of Service</span>.
+            </p>
           </div>
 
-          {/* Google Disclaimer */}
-          <p className="text-[12px] font-normal leading-[16px] text-[#444746]">
-            To continue, Google will share your name, email address, language preference, and profile picture with Super Career AI. Before using this app, you can review Super Career AI’s{' '}
-            <span className="text-[#0b57d0] hover:underline cursor-pointer">privacy policy</span> and{' '}
-            <span className="text-[#0b57d0] hover:underline cursor-pointer">terms of service</span>.
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="bg-[#f8f9fa] border-t border-[#e0e2ec] px-7 py-3 flex items-center justify-between text-[12px] text-[#444746]">
-          <span>English (United States)</span>
-          <div className="flex items-center gap-4">
-            <span className="hover:text-[#1f1f1f] cursor-pointer">Help</span>
-            <span className="hover:text-[#1f1f1f] cursor-pointer">Privacy</span>
-            <span className="hover:text-[#1f1f1f] cursor-pointer">Terms</span>
+          {/* Footer */}
+          <div className="flex items-center justify-between text-[12px] text-[#9aa0a6] pt-4 border-t border-[#2d2f31]">
+            <div className="flex items-center gap-1 cursor-pointer hover:text-[#e3e3e3]">
+              <span>English (United States)</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                <path d="M0 0.5L5 5.5L10 0.5H0Z" />
+              </svg>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="cursor-pointer hover:text-[#e3e3e3]">Help</span>
+              <span className="cursor-pointer hover:text-[#e3e3e3]">Privacy</span>
+              <span className="cursor-pointer hover:text-[#e3e3e3]">Terms</span>
+            </div>
           </div>
         </div>
       </div>
