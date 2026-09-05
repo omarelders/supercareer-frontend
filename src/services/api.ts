@@ -1,4 +1,9 @@
 import axios from 'axios'
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
 
 let _forceLogoutHandler: (() => void) | null = null
 
@@ -101,7 +106,9 @@ api.interceptors.response.use(
 
     if (!refresh) {
       // No refresh token available – force logout
-      forceLogout()
+      if (!IS_DEMO_MODE) {
+        forceLogout()
+      }
       return Promise.reject(error)
     }
 
@@ -124,7 +131,9 @@ api.interceptors.response.use(
       return api(originalRequest)
     } catch (refreshError) {
       processQueue(refreshError, null)
-      forceLogout()
+      if (!IS_DEMO_MODE) {
+        forceLogout()
+      }
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false
@@ -134,6 +143,10 @@ api.interceptors.response.use(
 
 // ---------------------------------------------------------------------------
 function forceLogout() {
+  if (IS_DEMO_MODE) {
+    console.warn('[api] forceLogout intercepted in Demo Mode (ignoring)')
+    return
+  }
   localStorage.removeItem('access')
   localStorage.removeItem('refresh')
   localStorage.removeItem('user')

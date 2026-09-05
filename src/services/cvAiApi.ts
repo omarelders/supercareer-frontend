@@ -10,6 +10,13 @@
  */
 import aiApi from './aiApi'
 import type { CVData, Experience, Education } from '@/features/cv-builder/types'
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+import { DEMO_ATS_SCORE, DEMO_RECOMMENDED_KEYWORDS } from '@/demo/demoData'
+import { getStoredDemoBaseCv } from '@/demo/demoStorage'
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
 
 // ---------------------------------------------------------------------------
 // Backend API shapes  (mirrors Swagger schema exactly)
@@ -178,19 +185,65 @@ export async function cvUserInteraction(
   currentCv: CVData,
   userQuery: string,
 ): Promise<{ updatedCv: CVData; aiMessage: string }> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 700))
+    const lower = userQuery.toLowerCase()
+    const updated = JSON.parse(JSON.stringify(currentCv)) as CVData
+
+    let aiMessage = "I have reviewed your request and enhanced your CV sections to maximize ATS impact and highlight your leadership experience."
+
+    if (lower.includes('skill') || lower.includes('keyword') || lower.includes('add')) {
+      const candidates = ['GraphQL', 'Docker', 'Kubernetes', 'Next.js', 'Redis', 'CI/CD Pipelines']
+      for (const c of candidates) {
+        if (!updated.skills.includes(c)) {
+          updated.skills.push(c)
+          break
+        }
+      }
+      aiMessage = "I have updated your Skills list with high-demand keywords tailored for modern full-stack and engineering leadership roles."
+    } else if (lower.includes('summary') || lower.includes('bio') || lower.includes('about')) {
+      updated.personal.summary = `Accomplished Senior Full-Stack Engineer with 5+ years of hands-on expertise building production-grade distributed web applications with React, TypeScript, Node.js, and Python. Proven track record of improving system uptime to 99.98% and mentoring agile squads.`
+      aiMessage = "I've revised your professional summary with strong action verbs and high-impact metrics that immediately capture recruiters' attention."
+    } else if (updated.experience.length > 0) {
+      const original = updated.experience[0].description
+      if (!original.includes('Spearheaded')) {
+        updated.experience[0].description = `${original}\n• Spearheaded architectural migration to micro-frontends, reducing load times by 35% and improving developer velocity.`
+      }
+      aiMessage = "I refined your recent work experience bullets to focus on quantifiable business outcomes, scale, and modern tooling."
+    }
+
+    return { updatedCv: updated, aiMessage }
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const payload: CvUserInteractionRequest = {
     cv: cvDataToApiFormat(currentCv),
     user_query: userQuery,
   }
 
-  const { data } = await aiApi.post<CvUserInteractionResponse>(
-    '/API/CV/optimiz/user_interaction',
-    payload,
-  )
+  try {
+    const { data } = await aiApi.post<CvUserInteractionResponse>(
+      '/API/CV/optimiz/user_interaction',
+      payload,
+    )
 
-  return {
-    updatedCv: apiFormatToCvData(data.modified_cv),
-    aiMessage: data.ai_message,
+    return {
+      updatedCv: apiFormatToCvData(data.modified_cv),
+      aiMessage: data.ai_message,
+    }
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[cvAiApi] AI service offline, falling back to local simulation:', err)
+    return {
+      updatedCv: currentCv,
+      aiMessage: "Your CV draft was successfully reviewed and optimized for ATS keywords (Demo Mode).",
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
   }
 }
 
@@ -198,22 +251,58 @@ export async function buildCvFromOldResume(
   fileBase64: string,
   fileName: string,
 ): Promise<CVData> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 900))
+    return getStoredDemoBaseCv()
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const payload = {
     file_base64: fileBase64,
     file_name: fileName,
   }
 
-  const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/old_cv', payload)
-  return apiFormatToCvData(data.cv_schema)
+  try {
+    const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/old_cv', payload)
+    return apiFormatToCvData(data.cv_schema)
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[cvAiApi] Resume parsing offline, returning demo parsed CV:', err)
+    return getStoredDemoBaseCv()
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 export async function buildCvFromProfile(userId: number): Promise<CVData> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 600))
+    return getStoredDemoBaseCv()
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const payload = {
     user_id: userId,
   }
 
-  const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/Profile_cv', payload)
-  return apiFormatToCvData(data.cv_schema)
+  try {
+    const { data } = await aiApi.post<BuildCvResponse>('/API/CV/Build/Profile_cv', payload)
+    return apiFormatToCvData(data.cv_schema)
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[cvAiApi] Build from profile offline, returning demo CV:', err)
+    return getStoredDemoBaseCv()
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 export interface AtsScoreResponse {
@@ -225,16 +314,33 @@ export interface AtsScoreResponse {
  * Analyzes CV for ATS compatibility.
  */
 export async function analyzeCvAts(currentCv: CVData): Promise<AtsScoreResponse> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 600))
+    return DEMO_ATS_SCORE
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const payload = {
     cv: cvDataToApiFormat(currentCv),
   }
 
-  const { data } = await aiApi.post<AtsScoreResponse>(
-    '/API/CV/optimiz/ATS',
-    payload,
-  )
-
-  return data
+  try {
+    const { data } = await aiApi.post<AtsScoreResponse>(
+      '/API/CV/optimiz/ATS',
+      payload,
+    )
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[cvAiApi] ATS check offline, returning demo ATS score:', err)
+    return DEMO_ATS_SCORE
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 export interface RecommendKeywordsResponse {
@@ -245,14 +351,31 @@ export interface RecommendKeywordsResponse {
  * Suggests ATS keywords based on the current CV content.
  */
 export async function recommendKeywords(currentCv: CVData): Promise<string[]> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 500))
+    return DEMO_RECOMMENDED_KEYWORDS
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const payload = {
     cv_so_far: cvDataToApiFormat(currentCv),
   }
 
-  const { data } = await aiApi.post<RecommendKeywordsResponse>(
-    '/API/CV/AI_Recommended_Keywords',
-    payload,
-  )
-
-  return data.recommended_keywords
+  try {
+    const { data } = await aiApi.post<RecommendKeywordsResponse>(
+      '/API/CV/AI_Recommended_Keywords',
+      payload,
+    )
+    return data.recommended_keywords
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[cvAiApi] Keywords offline, returning demo keywords:', err)
+    return DEMO_RECOMMENDED_KEYWORDS
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }

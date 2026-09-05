@@ -37,9 +37,9 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
-      remember: false,
+      email: 'demo@supercareer.ai',
+      password: 'password123',
+      remember: true,
     },
   })
 

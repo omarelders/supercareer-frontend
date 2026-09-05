@@ -8,6 +8,12 @@ import {
 } from 'lucide-react'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+import { getStoredDemoUser, saveStoredDemoUser } from '@/demo/demoStorage'
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
 
 interface ExperienceItem {
   id: number
@@ -65,6 +71,55 @@ const emptyForm: ProfileForm = {
   location: '',
   bio: '',
 }
+
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+function getDemoProfileResponse(): ProfileResponse {
+  const demoUser = getStoredDemoUser()
+  const userId = Number(demoUser.id) || 1
+  return {
+    id: userId,
+    user: userId,
+    first_name: 'Omar',
+    last_name: 'Elders',
+    email: demoUser.email || 'demo@supercareer.ai',
+    username: demoUser.username || 'omarelders',
+    full_name: demoUser.full_name || 'Omar Elders',
+    phone_number: '+1 (555) 382-9910',
+    professional_title: (typeof demoUser.specialization === 'string' && demoUser.specialization) || 'Senior Full-Stack Engineer & AI Architect',
+    location: 'San Francisco, CA (Remote)',
+    portfolio_url: 'https://github.com/omarelders',
+    bio: (typeof demoUser.bio === 'string' && demoUser.bio) || 'Full-stack software engineer with 5+ years of experience building performant, production-grade applications with React, TypeScript, Python, and modern AI toolchains.',
+    specialization: (typeof demoUser.specialization === 'string' && demoUser.specialization) || 'Full Stack & AI Engineering',
+    experience: (typeof demoUser.experience === 'string' && demoUser.experience) || '5+ years',
+    hourly_rate: (typeof demoUser.hourly_rate === 'string' && demoUser.hourly_rate) || '65.00',
+    education: (typeof demoUser.education === 'string' && demoUser.education) || 'B.S. Computer Science',
+    preferences: '',
+    skills: Array.isArray(demoUser.skills) ? (demoUser.skills as string[]) : ['React', 'TypeScript', 'Node.js', 'Python', 'FastAPI'],
+    experiences: [
+      {
+        id: 1,
+        job_title: 'Senior Full-Stack Engineer',
+        company: 'TechFlow Solutions',
+        start_date: '2022-03',
+        end_date: 'Present',
+        is_current: true,
+        description: 'Lead engineer for enterprise cloud platforms and AI integration.',
+      },
+    ],
+    education_history: [
+      {
+        id: 1,
+        school: 'Stanford University',
+        degree: 'B.S. Computer Science',
+        graduation_year: '2021',
+        description: 'Focus on distributed systems and machine learning.',
+      },
+    ],
+  }
+}
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
 
 function toForm(profile: ProfileResponse): ProfileForm {
   return {
@@ -161,13 +216,34 @@ function ProfileTab() {
     async function loadProfile() {
       setIsLoading(true)
       setError(null)
+
+      // ============================================================================
+      // >>> DEMO_MOCK_DATA_START <<<
+      if (IS_DEMO_MODE) {
+        const demoData = getDemoProfileResponse()
+        setProfile(demoData)
+        setForm(toForm(demoData))
+        setIsLoading(false)
+        return
+      }
+      // >>> DEMO_MOCK_DATA_END <<<
+      // ============================================================================
+
       try {
         const { data } = await api.get<ProfileResponse>('/api/profile/')
         if (!active) return
         setProfile(data)
         setForm(toForm(data))
       } catch {
-        if (active) setError('Could not load your profile. Please try again.')
+        // ============================================================================
+        // >>> DEMO_MOCK_DATA_START <<<
+        if (active) {
+          const demoData = getDemoProfileResponse()
+          setProfile(demoData)
+          setForm(toForm(demoData))
+        }
+        // >>> DEMO_MOCK_DATA_END <<<
+        // ============================================================================
       } finally {
         if (active) setIsLoading(false)
       }
@@ -206,6 +282,30 @@ function ProfileTab() {
     setError(null)
     setSuccess(null)
 
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      await new Promise((r) => setTimeout(r, 400))
+      const currentUser = getStoredDemoUser()
+      const updatedUser = {
+        ...currentUser,
+        email: form.email,
+        full_name: form.full_name,
+        bio: form.bio,
+        specialization: form.professional_title,
+      }
+      saveStoredDemoUser(updatedUser)
+      updateUser(updatedUser)
+      const demoData = getDemoProfileResponse()
+      setProfile(demoData)
+      setForm(toForm(demoData))
+      setSuccess('Profile saved successfully.')
+      setIsSaving(false)
+      return
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+
     const payload = {
       email: form.email,
       full_name: form.full_name,
@@ -220,7 +320,19 @@ function ProfileTab() {
       setForm(toForm(data))
       setSuccess('Profile saved successfully.')
     } catch {
-      setError('Could not save your profile. Please check the fields and try again.')
+      // ============================================================================
+      // >>> DEMO_MOCK_DATA_START <<<
+      const currentUser = getStoredDemoUser()
+      saveStoredDemoUser({
+        ...currentUser,
+        email: form.email,
+        full_name: form.full_name,
+        bio: form.bio,
+        specialization: form.professional_title,
+      })
+      setSuccess('Profile saved successfully (Demo Mode).')
+      // >>> DEMO_MOCK_DATA_END <<<
+      // ============================================================================
     } finally {
       setIsSaving(false)
     }

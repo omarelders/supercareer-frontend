@@ -44,6 +44,14 @@ function isTokenExpired(token: string | null): boolean {
   return payload.exp * 1000 < Date.now() + 10_000
 }
 
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+import { DEMO_USER, DEMO_TOKENS } from '@/demo/demoData'
+import { getStoredDemoUser } from '@/demo/demoStorage'
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
+
 function getInitialState(): AuthState {
   try {
     const access = localStorage.getItem('access')
@@ -51,6 +59,17 @@ function getInitialState(): AuthState {
     if (access && stored) {
       return { isAuthenticated: true, user: JSON.parse(stored), loading: true }
     }
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      const demoUser = getStoredDemoUser()
+      localStorage.setItem('access', DEMO_TOKENS.access)
+      localStorage.setItem('refresh', DEMO_TOKENS.refresh)
+      localStorage.setItem('user', JSON.stringify(demoUser))
+      return { isAuthenticated: true, user: demoUser, loading: false }
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
   } catch {
     // ignore
   }
@@ -60,6 +79,19 @@ function getInitialState(): AuthState {
 export const initializeAuth = createAsyncThunk(
   'auth/initialize',
   async () => {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      const demoUser = getStoredDemoUser()
+      localStorage.setItem('access', DEMO_TOKENS.access)
+      localStorage.setItem('refresh', DEMO_TOKENS.refresh)
+      localStorage.setItem('user', JSON.stringify(demoUser))
+      api.defaults.headers.common['Authorization'] = `Bearer ${DEMO_TOKENS.access}`
+      return { isAuthenticated: true }
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+
     const access = localStorage.getItem('access')
     const refresh = localStorage.getItem('refresh')
 
@@ -88,17 +120,38 @@ const persistSession = (access: string, refresh: string, userData: AuthUser) => 
 export const loginThunk = createAsyncThunk(
   'auth/login',
   async ({ email, password }: Record<string, string>) => {
-    const { data } = await api.post<LoginResponse>('/api/login/', { email, password })
-    const access = data.tokens.access
-    const refresh = data.tokens.refresh
-    const userData = data.user
-
-    if (!access || !refresh) {
-      throw new Error('Missing access/refresh tokens.')
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      const demoUser = { ...getStoredDemoUser(), email: email || DEMO_USER.email }
+      persistSession(DEMO_TOKENS.access, DEMO_TOKENS.refresh, demoUser)
+      return demoUser
     }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
 
-    persistSession(access, refresh, userData ?? { email })
-    return userData ?? { email }
+    try {
+      const { data } = await api.post<LoginResponse>('/api/login/', { email, password })
+      const access = data.tokens.access
+      const refresh = data.tokens.refresh
+      const userData = data.user
+
+      if (!access || !refresh) {
+        throw new Error('Missing access/refresh tokens.')
+      }
+
+      persistSession(access, refresh, userData ?? { email })
+      return userData ?? { email }
+    } catch (err) {
+      // ============================================================================
+      // >>> DEMO_MOCK_DATA_START <<<
+      console.warn('[authSlice] Real API failed, falling back to Demo Mode:', err)
+      const demoUser = { ...getStoredDemoUser(), email: email || DEMO_USER.email }
+      persistSession(DEMO_TOKENS.access, DEMO_TOKENS.refresh, demoUser)
+      return demoUser
+      // >>> DEMO_MOCK_DATA_END <<<
+      // ============================================================================
+    }
   }
 )
 

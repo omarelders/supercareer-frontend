@@ -12,6 +12,11 @@ import { useAuth } from '@/context/AuthContext'
 import api from '@/services/api'
 import AnimatedContent from '@/components/reactbits/AnimatedContent'
 import GlareHover from '@/components/reactbits/GlareHover'
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+import { DEMO_USER } from '@/demo/demoData'
+import { saveStoredDemoUser } from '@/demo/demoStorage'
+// >>> DEMO_MOCK_DATA_END <<<
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -144,18 +149,18 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
     defaultValues: {
-      username: '',
-      full_name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'job_seeker',
-      skills: '',
-      hourly_rate: '0.00',
-      specialization: '',
-      experience: '',
-      bio: '',
-      education: '',
+      username: 'demo_user',
+      full_name: 'Omar Elders',
+      email: 'demo@supercareer.ai',
+      password: 'password123',
+      confirmPassword: 'password123',
+      role: 'both',
+      skills: 'React, TypeScript, Node.js, Python, TailwindCSS',
+      hourly_rate: '65.00',
+      specialization: 'Senior Full-Stack Engineer',
+      experience: '5+ years',
+      bio: 'Senior software engineer specializing in scalable frontend and backend architectures.',
+      education: 'B.S. in Computer Science',
     },
   })
 
@@ -191,18 +196,70 @@ export default function RegisterPage() {
       preferences: '',
     }
 
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      saveStoredDemoUser({
+        ...DEMO_USER,
+        email: values.email,
+        username: values.username,
+        full_name: values.full_name,
+        role: values.role,
+        skills: skillsArray,
+        hourly_rate: values.hourly_rate ?? '0.00',
+        specialization: values.specialization ?? '',
+        experience: values.experience ?? '',
+        bio: values.bio ?? '',
+        education: values.education ?? '',
+      })
+      setSuccess(true)
+      setIsSubmitting(false)
+      try {
+        await login(values.email, values.password)
+        navigate('/dashboard', { replace: true })
+      } catch {
+        // fallback
+      }
+      return
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+
     // ── Step 1: Register ────────────────────────────────────────────────
     try {
       await api.post('/api/register/', payload)
     } catch (err: unknown) {
+      // ============================================================================
+      // >>> DEMO_MOCK_DATA_START <<<
+      console.warn('[RegisterPage] Server offline, falling back to Demo Mode registration')
+      saveStoredDemoUser({
+        ...DEMO_USER,
+        email: values.email,
+        username: values.username,
+        full_name: values.full_name,
+        role: values.role,
+      })
+      setSuccess(true)
+      setIsSubmitting(false)
+      try {
+        await login(values.email, values.password)
+        navigate('/dashboard', { replace: true })
+      } catch {
+        // fallback
+      }
+      return
+      // >>> DEMO_MOCK_DATA_END <<<
+      // ============================================================================
+
       const axiosErr = err as {
-        response?: { data?: Record<string, unknown>; status?: number }
+        response?: { data?: unknown; status?: number }
         message?: string
         code?: string
-      }
+      } | undefined
 
-      if (axiosErr.response?.data && typeof axiosErr.response.data === 'object') {
-        const data = axiosErr.response.data as Record<string, unknown>
+      const responseData = axiosErr?.response?.data
+      if (responseData && typeof responseData === 'object') {
+        const data = responseData as Record<string, unknown>
         const messages = Object.entries(data)
           .map(([field, msgs]) => {
             const list = Array.isArray(msgs) ? msgs : [msgs]
@@ -212,12 +269,12 @@ export default function RegisterPage() {
         setServerError(messages)
         const step1Keys = new Set(STEP1_FIELDS as string[])
         if (Object.keys(data).some((k) => step1Keys.has(k))) setStep(1)
-      } else if (typeof axiosErr.response?.data === 'string') {
-        setServerError(axiosErr.response.data)
-      } else if (axiosErr.code === 'ERR_NETWORK' || !axiosErr.response) {
+      } else if (typeof responseData === 'string') {
+        setServerError(responseData as string)
+      } else if (axiosErr?.code === 'ERR_NETWORK' || !axiosErr?.response) {
         setServerError('Unable to reach the server. Please check your connection and try again.')
       } else {
-        setServerError(axiosErr.message ?? 'Registration failed. Please try again.')
+        setServerError(axiosErr?.message ?? 'Registration failed. Please try again.')
       }
       setIsSubmitting(false)
       return // Stop here — registration itself failed

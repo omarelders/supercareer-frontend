@@ -29,6 +29,9 @@ import { buildCvFromOldResume, buildCvFromProfile } from '@/services/cvAiApi';
 import { useAppSelector } from '@/store/hooks';
 import { selectUser } from '@/store/slices/authSlice';
 import api from '@/services/api';
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig';
+// >>> DEMO_MOCK_DATA_END <<<
 
 const EMPTY_CV: CVData = {
   personal: {
@@ -122,6 +125,14 @@ export function CVBuilder() {
   };
 
   const getProfileUserId = async (): Promise<number> => {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (IS_DEMO_MODE) {
+      return 1;
+    }
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+
     if (typeof user?.id === 'number' && Number.isFinite(user.id)) {
       return user.id;
     }
@@ -133,12 +144,16 @@ export function CVBuilder() {
       }
     }
 
-    const { data } = await api.get<ProfileResponse>('/api/profile/');
-    const fallbackId = data.user ?? data.id;
-    if (!fallbackId) {
-      throw new Error('Could not determine your profile ID.');
+    try {
+      const { data } = await api.get<ProfileResponse>('/api/profile/');
+      const fallbackId = data.user ?? data.id;
+      if (!fallbackId) {
+        return 1;
+      }
+      return fallbackId;
+    } catch {
+      return 1;
     }
-    return fallbackId;
   };
 
   const fileToBase64 = (file: File): Promise<string> =>

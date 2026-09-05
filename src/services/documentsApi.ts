@@ -31,6 +31,24 @@
 import api from './api'
 import type { CVData } from '@/features/cv-builder/types'
 import { cvDataToApiFormat, apiFormatToCvData, type ApiCV, type ApiPersonalDetails } from './cvAiApi'
+// ============================================================================
+// >>> DEMO_MOCK_DATA_START <<<
+import { IS_DEMO_MODE } from '@/demo/demoConfig'
+import {
+  getStoredDemoCVs,
+  addStoredDemoCV,
+  updateStoredDemoCV,
+  deleteStoredDemoCV,
+  getStoredDemoProposals,
+  saveStoredDemoProposals,
+  updateStoredDemoProposalStatus,
+  getStoredDemoJobs,
+  getStoredDemoBaseCv,
+  saveStoredDemoBaseCv,
+} from '@/demo/demoStorage'
+import { DEMO_BASE_CV_DATA } from '@/demo/demoData'
+// >>> DEMO_MOCK_DATA_END <<<
+// ============================================================================
 
 // ---------------------------------------------------------------------------
 // Backend response shapes (snake_case, mirrors the Swagger CV schema)
@@ -274,17 +292,86 @@ export function dbCvToCvData(dbCv: DbCV): CVData {
 
 /** Retrieve all CVs (base + tailored) for the authenticated user. */
 export async function getCustomCVs(): Promise<DbCV[]> {
-  const { data } = await api.get<DbCV[]>('/api/documents/cv/')
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    return getStoredDemoCVs()
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.get<DbCV[]>('/api/documents/cv/')
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[documentsApi] Server offline, falling back to demo CVs:', err)
+    return getStoredDemoCVs()
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 /** Retrieve a specific CV by ID. */
 export async function getCvDocumentById(id: number): Promise<DbCV> {
-  const { data } = await api.get<DbCV>(`/api/documents/cv/${id}/`)
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const found = getStoredDemoCVs().find((cv) => cv.id === id)
+    if (found) return found
+    const all = getStoredDemoCVs()
+    return all[0] || ({ ...buildFlatCvPayload(DEMO_BASE_CV_DATA), id, user: 1, is_base: true } as DbCV)
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.get<DbCV>(`/api/documents/cv/${id}/`)
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const found = getStoredDemoCVs().find((cv) => cv.id === id)
+    if (found) return found
+    const all = getStoredDemoCVs()
+    return all[0] || ({ ...buildFlatCvPayload(DEMO_BASE_CV_DATA), id, user: 1, is_base: true } as DbCV)
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 export async function createCvDocument(cvData: CVData): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const all = getStoredDemoCVs()
+    const nextId = Math.max(...all.map((c) => c.id), 10) + 1
+    const flat = buildFlatCvPayload(cvData)
+    const newCv: DbCV = {
+      id: nextId,
+      user: 1,
+      job: null,
+      full_name: flat.full_name || '',
+      phone_number: flat.phone_number || '',
+      professional_title: flat.professional_title || '',
+      email_address: flat.email_address || '',
+      location: flat.location || '',
+      portfolio_url: flat.portfolio_url || '',
+      professional_summary: flat.professional_summary || '',
+      content: JSON.stringify(cvData),
+      ats_score: 92,
+      is_base: false,
+      Experience: flat.Experience || [],
+      Education: flat.Education || [],
+      Skills: flat.Skills || [],
+      created_at: new Date().toISOString(),
+    }
+    return addStoredDemoCV(newCv)
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const apiPayload = cvDataToApiFormat(cvData);
 
   if (!cvData.personal.url) {
@@ -325,6 +412,20 @@ export async function createCvDocument(cvData: CVData): Promise<DbCV> {
  * Payload must use the CustomCVSchema (ApiCV) format.
  */
 export async function updateCvDocument(id: number, payload: ApiCV): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const cvData = apiFormatToCvData(payload)
+    const flat = buildFlatCvPayload(cvData)
+    const updated = updateStoredDemoCV(id, {
+      ...flat,
+      content: JSON.stringify(cvData),
+    })
+    if (updated) return updated
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const { data } = await api.put<DbCV>(`/api/documents/cv/${id}/`, payload)
   return data
 }
@@ -340,6 +441,19 @@ export async function updateCvDocument(id: number, payload: ApiCV): Promise<DbCV
  * so missing/empty values like portfolio_url won't cause 400 errors.
  */
 export async function patchCvContent(id: number, cvData: CVData): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const flat = buildFlatCvPayload(cvData)
+    const updated = updateStoredDemoCV(id, {
+      ...flat,
+      content: JSON.stringify(cvData),
+    })
+    if (updated) return updated
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const apiPayload = cvDataToApiFormat(cvData)
 
   if (!cvData.personal.url) {
@@ -362,6 +476,17 @@ export async function patchCvContent(id: number, cvData: CVData): Promise<DbCV> 
 
     return getResponse
   } catch (err: unknown) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[documentsApi] Server offline, patching CV locally')
+    const flat = buildFlatCvPayload(cvData)
+    const updated = updateStoredDemoCV(id, {
+      ...flat,
+      content: JSON.stringify(cvData),
+    })
+    if (updated) return updated
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
     if (err && typeof err === 'object' && 'response' in err) {
       const axErr = err as { response?: { data?: unknown; status?: number } }
       console.error('[patchCvContent] Error response body:', JSON.stringify(axErr.response?.data, null, 2))
@@ -420,13 +545,50 @@ export async function patchCvDocument(
   id: number,
   payload: Partial<DbCV>,
 ): Promise<DbCV> {
-  const { data } = await api.patch<DbCV>(`/api/documents/cv/${id}/`, payload)
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const updated = updateStoredDemoCV(id, payload)
+    if (updated) return updated
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.patch<DbCV>(`/api/documents/cv/${id}/`, payload)
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const updated = updateStoredDemoCV(id, payload)
+    if (updated) return updated
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+    throw err
+  }
 }
 
 /** Delete a specific CV. */
 export async function deleteCustomCV(id: number): Promise<void> {
-  await api.delete(`/api/documents/cv/${id}/`)
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    deleteStoredDemoCV(id)
+    return
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    await api.delete(`/api/documents/cv/${id}/`)
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    deleteStoredDemoCV(id)
+    return
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 /**
@@ -463,8 +625,26 @@ export async function renameCustomCV(id: number, newTitle: string): Promise<DbCV
 
 /** Retrieve the user's Base CV. Throws if no base CV exists (404). */
 export async function getBaseCv(): Promise<DbCV> {
-  const { data } = await api.get<DbCV>('/api/documents/cv/base/update/')
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const base = getStoredDemoCVs().find((c) => c.is_base) || getStoredDemoCVs()[0]
+    return base
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.get<DbCV>('/api/documents/cv/base/update/')
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const base = getStoredDemoCVs().find((c) => c.is_base) || getStoredDemoCVs()[0]
+    return base
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 /**
@@ -472,6 +652,22 @@ export async function getBaseCv(): Promise<DbCV> {
  * Uses the flat payload + content JSON approach for reliable saves.
  */
 export async function createBaseCv(cvData: CVData): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    saveStoredDemoBaseCv(cvData)
+    const base = getStoredDemoCVs().find((c) => c.is_base)
+    if (base) {
+      updateStoredDemoCV(base.id, {
+        ...buildFlatCvPayload(cvData),
+        content: JSON.stringify(cvData),
+      })
+      return base
+    }
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   // Try the ApiCV format first (POST /cv/base/ uses CustomCVSchema)
   try {
     const payload = cvDataToApiFormat(cvData)
@@ -495,6 +691,22 @@ export async function createBaseCv(cvData: CVData): Promise<DbCV> {
  * Same ApiCV format as patchCvContent — no required fields so safe.
  */
 export async function saveBaseCv(cvData: CVData): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    saveStoredDemoBaseCv(cvData)
+    const base = getStoredDemoCVs().find((c) => c.is_base)
+    if (base) {
+      const updated = updateStoredDemoCV(base.id, {
+        ...buildFlatCvPayload(cvData),
+        content: JSON.stringify(cvData),
+      })
+      if (updated) return updated
+    }
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   const apiPayload = cvDataToApiFormat(cvData)
 
   // Same URL-stripping as patchCvContent — Django URLValidator rejects placeholders.
@@ -525,6 +737,45 @@ export async function saveBaseCv(cvData: CVData): Promise<DbCV> {
  * by matching the job foreign key.
  */
 export async function createJobTailoredCv(jobId: number): Promise<DbCV> {
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 600))
+    const existing = getStoredDemoCVs().find((c) => c.job === jobId)
+    if (existing) return existing
+
+    const job = getStoredDemoJobs().find((j) => j.id === jobId)
+    const baseCvData = getStoredDemoBaseCv()
+    const all = getStoredDemoCVs()
+    const nextId = Math.max(...all.map((c) => c.id), 10) + 1
+    const flat = buildFlatCvPayload(baseCvData)
+
+    const newCv: DbCV = {
+      id: nextId,
+      user: 1,
+      job: jobId,
+      full_name: flat.full_name || 'Omar Elders',
+      phone_number: flat.phone_number || '+1 (555) 382-9910',
+      professional_title: job ? `${job.title} Specialist` : flat.professional_title || 'Software Engineer',
+      email_address: flat.email_address || 'omar@example.com',
+      location: flat.location || 'San Francisco, CA',
+      portfolio_url: flat.portfolio_url || 'https://github.com/omarelders',
+      professional_summary: job
+        ? `Dedicated ${job.title} candidate with proven achievements in ${job.required_skills?.slice(0, 3).join(', ')}. Demonstrated experience shipping resilient architectures and accelerating product cycles.`
+        : flat.professional_summary || '',
+      content: JSON.stringify(baseCvData),
+      ats_score: 95,
+      is_base: false,
+      Experience: flat.Experience || [],
+      Education: flat.Education || [],
+      Skills: Array.from(new Set([...(job?.required_skills || []), ...(flat.Skills || [])])),
+      created_at: new Date().toISOString(),
+    }
+    return addStoredDemoCV(newCv)
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
   await api.post(`/api/documents/cv/job/${jobId}/`)
   // Re-fetch the full list and find the CV linked to this job
   const cvs = await getCustomCVs()
@@ -556,18 +807,54 @@ export type PatchProposalPayload = Partial<UpdateProposalPayload>
 
 /** Fetch the complete list of proposals for the authenticated user. */
 export async function fetchDocumentProposals(): Promise<DocApiProposal[]> {
-  const { data } = await api.get<DocApiProposal[]>('/api/documents/proposals/')
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    return getStoredDemoProposals()
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.get<DocApiProposal[]>('/api/documents/proposals/')
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    console.warn('[documentsApi] Server offline, falling back to demo proposals:', err)
+    return getStoredDemoProposals()
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
 
 /** Fetch a single proposal by id. */
 export async function fetchDocumentProposalById(
   id: number,
 ): Promise<DocApiProposal> {
-  const { data } = await api.get<DocApiProposal>(
-    `/api/documents/proposals/${id}/`,
-  )
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const found = getStoredDemoProposals().find((p) => p.id === id)
+    if (found) return found
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.get<DocApiProposal>(
+      `/api/documents/proposals/${id}/`,
+    )
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const found = getStoredDemoProposals().find((p) => p.id === id)
+    if (found) return found
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+    throw err
+  }
 }
 
 /**
@@ -578,11 +865,30 @@ export async function updateDocumentProposal(
   id: number,
   payload: UpdateProposalPayload,
 ): Promise<DocApiProposal> {
-  const { data } = await api.put<DocApiProposal>(
-    `/api/documents/proposals/${id}/`,
-    payload,
-  )
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const updated = updateStoredDemoProposalStatus(id, payload.status)
+    if (updated) return updated
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.put<DocApiProposal>(
+      `/api/documents/proposals/${id}/`,
+      payload,
+    )
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const updated = updateStoredDemoProposalStatus(id, payload.status)
+    if (updated) return updated
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+    throw err
+  }
 }
 
 /**
@@ -593,16 +899,63 @@ export async function patchDocumentProposal(
   id: number,
   payload: PatchProposalPayload,
 ): Promise<DocApiProposal> {
-  const { data } = await api.patch<DocApiProposal>(
-    `/api/documents/proposals/${id}/`,
-    payload,
-  )
-  return data
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    if (payload.status) {
+      const updated = updateStoredDemoProposalStatus(id, payload.status)
+      if (updated) return updated
+    }
+    const found = getStoredDemoProposals().find((p) => p.id === id)
+    if (found) return found
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    const { data } = await api.patch<DocApiProposal>(
+      `/api/documents/proposals/${id}/`,
+      payload,
+    )
+    return data
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    if (payload.status) {
+      const updated = updateStoredDemoProposalStatus(id, payload.status)
+      if (updated) return updated
+    }
+    const found = getStoredDemoProposals().find((p) => p.id === id)
+    if (found) return found
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+    throw err
+  }
 }
 
 /**
  * Delete a proposal by id.
  */
 export async function deleteDocumentProposal(id: number): Promise<void> {
-  await api.delete(`/api/documents/proposals/${id}/`)
+  // ============================================================================
+  // >>> DEMO_MOCK_DATA_START <<<
+  if (IS_DEMO_MODE) {
+    const current = getStoredDemoProposals()
+    saveStoredDemoProposals(current.filter((p) => p.id !== id))
+    return
+  }
+  // >>> DEMO_MOCK_DATA_END <<<
+  // ============================================================================
+
+  try {
+    await api.delete(`/api/documents/proposals/${id}/`)
+  } catch (err) {
+    // ============================================================================
+    // >>> DEMO_MOCK_DATA_START <<<
+    const current = getStoredDemoProposals()
+    saveStoredDemoProposals(current.filter((p) => p.id !== id))
+    return
+    // >>> DEMO_MOCK_DATA_END <<<
+    // ============================================================================
+  }
 }
